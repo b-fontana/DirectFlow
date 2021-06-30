@@ -1,3 +1,5 @@
+#ifndef FUNCTIONS_PROTON_SPEC_H
+#define FUNCTIONS_PROTON_SPEC_H
 
 
 static const Double_t part_mass   = 0.938; // GeV/c2
@@ -362,3 +364,4 @@ void Track_eta_pT_phi_q_xyz_m(Double_t px, Double_t py, Double_t pz, Int_t q, Do
 }
 //------------------------------------------------------------------------------------------------------------------
 
+#endif // FUNCTIONS_PROTON_SPEC_H
