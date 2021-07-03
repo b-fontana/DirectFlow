@@ -7,8 +7,8 @@ void v1_beam()
   gRandom->SetSeed(0);
   gStyle->SetPalette(56); // 53 = black body radiation, 56 = inverted black body radiator, 103 = sunset, 87 == light temperature
 
-  ROOT::Math::XYZVector vec_p(0.0,0.0,3000.0); // 5000
-  double pos_xyz[3] = {0.0,-0.0,-6990.0};
+  ROOT::Math::XYZVector vec_p(0.0,0.0,1500.0); // 5000
+  double pos_xyz[3] = {0.0,-0.0,-6900.0};
 
   TLorentzVector* TLV_particle = new TLorentzVector();
 
@@ -30,8 +30,12 @@ void v1_beam()
   //    {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529), std::make_pair(5840.0, 5840.0+945.0),   100., 100.}
   // };
 
+  // std::vector<Magnets::Magnet> magnetInfo{
+  //    {Magnets::DipoleY,    "D1_neg", kGreen,    std::make_pair(0.,-3.529),  std::make_pair(-5840.0-945.0, -5840.0), 100., 100.},
+  // };
+
   std::vector<Magnets::Magnet> magnetInfo{
-     {Magnets::DipoleY,    "D1_neg", kGreen,    std::make_pair(0.,-3.529),  std::make_pair(-5840.0-945.0, -5840.0), 100., 100.},
+     {Magnets::DipoleY,    "D1_neg", kGreen,    std::make_pair(0.,-3.529),  std::make_pair(pos_xyz[2]-1500, pos_xyz[2]+3000), 600., 600.},
   };
 
   Magnets magnets(magnetInfo);
@@ -73,7 +77,8 @@ void v1_beam()
       else {
 	if(i_step==0)
 	  file << "x" << "," << "z" << std::endl;
-        file << std::to_string(track_pos_dir[i_step][0]) << "," << std::to_string(track_pos_dir[i_step][2]) << std::endl;
+	//if(i_step%100==0)
+	file << std::to_string(track_pos_dir[i_step][0]) << "," << std::to_string(track_pos_dir[i_step][2]) << std::endl;
       }
       //f >> std::to_string(track_pos_dir[i_step][0]) >> std::endl;
       //printf("i_step: %d, pos: {%4.3f, %4.3f, %4.3f} \n",i_step,track_pos_dir[i_step][0],track_pos_dir[i_step][1],track_pos_dir[i_step][2]);

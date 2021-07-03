@@ -4,21 +4,22 @@ import numpy as np
 from scipy import optimize
 from bokeh.io import output_file, show
 from bokeh.plotting import figure
+from bokeh.layouts import row
 from bokeh.models import ColumnDataSource as CDS, Range1d, Label
 output_file( os.path.basename(__file__)[:-2] + 'html' )
 
 #define constants
 DEBUG = True
-XMIN, XMAX = 1000, 3200
-YMIN, YMAX = 200, 2400
+XMIN, XMAX = 1500, 3000
+YMIN, YMAX = 1000, 2500
 assert(XMAX-XMIN == YMAX-YMIN)
-CENTER_EST = 2100, 1700
+CENTER_EST = 2100, 1600
 
 # get the data and shift it to get positive values
 df = pd.read_csv('track_pos.csv')
 df.x = df.x + 2000
 df.z = df.z + 9000
-dffilt = df
+dffilt = df # selection can be done here
 df['xfilt'] = dffilt.x
 df['zfilt'] = dffilt.z
 
@@ -45,10 +46,13 @@ if DEBUG:
 
 source = CDS( df )
 
-fig = figure()
-fig.circle(x=xc, y=yc, color='red', fill_color=None, alpha=0.9, radius=R, legend_label='fit', radius_units='data')
-fig.circle(x='z', y='x', color='blue', source=source, size=1, legend_label='full data')
-#fig.triangle(x='zfilt', y='xfilt', color='green', source=source, legend_label='fitted data')
+p1 = figure()
+p1.circle(x=xc, y=yc, color='red', fill_color=None, alpha=0.9, radius=R, legend_label='fit', radius_units='data')
+p1.circle(x='z', y='x', color='blue', source=source, size=1, legend_label='full data')
+p1.triangle(x='zfilt', y='xfilt', color='green', source=source, legend_label='fitted data')
+
+p2 = figure()
+p2.circle(x='index', y='energy', legend_label='energies', source=source)
 
 Rstring = Label(x=xc-200, y=yc,
                  text='Radius: '+str(round(R,2))+' cm',
@@ -59,15 +63,15 @@ MomentumStr = Label(x=xc-350, y=yc-100,
                     text='Momentum estimate: '+str(round(mom,2))+' GeV',
                  text_color='black')
 
-fig.add_layout(Rstring)
-fig.add_layout(MomentumStr)
+p1.add_layout(Rstring)
+p1.add_layout(MomentumStr)
 
 #plot circle center and radius
-fig.xaxis.axis_label = 'Z [cm]'
-fig.yaxis.axis_label = 'X [cm]'
-#fig.x_range = Range1d(XMIN,XMAX)
-#fig.y_range = Range1d(YMIN,YMAX)
+p1.xaxis.axis_label = 'Z [cm]'
+p1.yaxis.axis_label = 'X [cm]'
+p1.x_range = Range1d(XMIN,XMAX)
+p1.y_range = Range1d(YMIN,YMAX)
 
-show(fig)
+show(row(p1,p2))
 
 

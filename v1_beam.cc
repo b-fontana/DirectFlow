@@ -1,69 +1,48 @@
-#include "functions.h"
-#include "functions_proton_spec.h"
+#include "./functions.h"
+#include "./geometry.h"
+#include "./functions_proton_spec.h"
 
-void v1_beam()
+void run()
 {
-  std::cout << "v1_beam macro started" << std::endl;
   gRandom->SetSeed(0);
   gStyle->SetPalette(56); // 53 = black body radiation, 56 = inverted black body radiator, 103 = sunset, 87 == light temperature
 
+  ROOT::Math::XYZVector vec_p(0.0,0.0,1500.0); // 5000
+  double pos_xyz[3] = {0.0,-0.0,-6900.0};
 
-  TVector3 vec_p;
-  vec_p.SetXYZ(0.0,0.0,5000.0); // 5000
-  Double_t pos_xyz[3] = {0.0,-0.0,-6990.0};
+  TLorentzVector* TLV_particle = new TLorentzVector();
 
-  TLorentzVector* TLV_particle;
-  TLV_particle = new TLorentzVector();
+  double particle_energy = TMath::Sqrt(vec_p.Mag2() + 0.938*0.938);
+  TLV_particle->SetPxPyPzE(vec_p.x(),vec_p.y(),vec_p.z(),particle_energy); // nucleon momentum in cm frame, Fermi momentum + v1 momentum
 
-  Double_t particle_energy = TMath::Sqrt(vec_p.Mag()*vec_p.Mag() + 0.938*0.938);
-  TLV_particle       ->SetPxPyPzE(vec_p.x(),vec_p.y(),vec_p.z(),particle_energy); // nucleon momentum in cm frame, Fermi momentum + v1 momentum
+  // std::vector<Magnets::Magnet> magnetInfo{
+  //    {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),  std::make_pair(-5840.0-945.0, -5840.0), 100., 100.},
+  //    {Magnets::Quadrupole, "Q4_neg", kYellow,  std::make_pair(2.34,-2.34), std::make_pair(-4730.0-630.0, -4730.0), 100., 100.},
+  //    {Magnets::Quadrupole, "Q3_neg", kYellow,  std::make_pair(-2.34,2.34), std::make_pair(-3830.0-550.0, -3830.0), 100., 100.},
+  //    {Magnets::Quadrupole, "Q2_neg", kYellow,  std::make_pair(-2.34,2.34), std::make_pair(-3180.0-550.0, -3180.0), 100., 100.},
+  //    {Magnets::Quadrupole, "Q1_neg", kYellow,  std::make_pair(2.34,-2.34), std::make_pair(-2300.0-630.0, -2300.0), 100., 100.},
+  //    {Magnets::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.), std::make_pair(-1920.0-190.0, -1920.0), 100., 100.},
+  //    {Magnets::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),    std::make_pair(-750.0-430.0,  -750.0),  100., 100.},
+  //    {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(2.34,-2.34), std::make_pair(2300.0, 2300.0+630.0),   100., 100.},
+  //    {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-2.34,2.34), std::make_pair(3180.0, 3180.0+550.0),   100., 100.},
+  //    {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-2.34,2.34), std::make_pair(3830.0, 3830.0+550.0),   100., 100.},
+  //    {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(2.34,-2.34), std::make_pair(4730.0, 4730.0+630.0),   100., 100.},
+  //    {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529), std::make_pair(5840.0, 5840.0+945.0),   100., 100.}
+  // };
 
-  TEveManager::Create();
-  TEveLine* TEveLine_beam_axis = NULL;
-  TEveLine_beam_axis = new TEveLine();
-  TEveLine_beam_axis ->SetNextPoint(0.0,0.0,-7650.0);
-  TEveLine_beam_axis ->SetNextPoint(0.0,0.0,7650.0);
-  TEveLine_beam_axis ->SetName("beam axis");
-  TEveLine_beam_axis ->SetLineStyle(1);
-  TEveLine_beam_axis ->SetLineWidth(4);
-  TEveLine_beam_axis ->SetMainAlpha(0.7);
-  TEveLine_beam_axis ->SetMainColor(kBlue);
-  gEve->AddElement(TEveLine_beam_axis);
+  // std::vector<Magnets::Magnet> magnetInfo{
+  //    {Magnets::DipoleY,    "D1_neg", kGreen,    std::make_pair(0.,-3.529),  std::make_pair(-5840.0-945.0, -5840.0), 100., 100.},
+  // };
 
-  std::vector<TEveBox*> vec_eve_magnets;
-  vec_eve_magnets.resize(12);
-  TString label_magnet_names[12] = {"D1_neg","Q4_neg","Q3_neg","Q2_neg","Q1_neg","D_corr","Muon","Q1_pos","Q2_pos","Q3_pos","Q4_pos","D1_pos"};
-  Double_t z_start_magnets[12] = {-5840.0 - 945.0,-4730.0 - 630.0,-3830.0 - 550.0,-3180.0 - 550.0,-2300.0 - 630.0,-1920.0 - 190.0,-750.0 - 430.0,
-				  2300.0,3180.0,3830.0,4730.0,5840.0};
-  Double_t z_stop_magnets[12] = {-5840.0,-4730.0,-3830.0,-3180.0,-2300.0,-1920.0,-750.0,
-				 2300.0 + 630.0,3180.0 + 550.0,3830.0 + 550.0,4730.0 + 630.0,5840.0 + 945.0};
-  Double_t x_size_magnets = 100.0;
-  Double_t y_size_magnets = 100.0;
-  Int_t color_magnets[12] = {kBlue,kYellow,kYellow,kYellow,kYellow,kBlue+1,kMagenta,kYellow,kYellow,kYellow,kYellow,kBlue};
-  for(Int_t i_magnet = 0; i_magnet < 12; i_magnet++)
-    {
-      vec_eve_magnets[i_magnet] = new TEveBox;
-      vec_eve_magnets[i_magnet] ->SetName(label_magnet_names[i_magnet].Data());
+  std::vector<Magnets::Magnet> magnetInfo{
+     {Magnets::DipoleY,    "D1_neg", kGreen,    std::make_pair(0.,-3.529),  std::make_pair(pos_xyz[2]-1500, pos_xyz[2]+3000), 600., 600.},
+  };
 
-      vec_eve_magnets[i_magnet] ->SetVertex(0,-x_size_magnets,-y_size_magnets,z_start_magnets[i_magnet]);
-      vec_eve_magnets[i_magnet] ->SetVertex(1,x_size_magnets,-y_size_magnets,z_start_magnets[i_magnet]);
-      vec_eve_magnets[i_magnet] ->SetVertex(2,x_size_magnets,y_size_magnets,z_start_magnets[i_magnet]);
-      vec_eve_magnets[i_magnet] ->SetVertex(3,-x_size_magnets,y_size_magnets,z_start_magnets[i_magnet]);
-      vec_eve_magnets[i_magnet] ->SetVertex(4,-x_size_magnets,-y_size_magnets,z_stop_magnets[i_magnet]);
-      vec_eve_magnets[i_magnet] ->SetVertex(5,x_size_magnets,-y_size_magnets,z_stop_magnets[i_magnet]);
-      vec_eve_magnets[i_magnet] ->SetVertex(6,x_size_magnets,y_size_magnets,z_stop_magnets[i_magnet]);
-      vec_eve_magnets[i_magnet] ->SetVertex(7,-x_size_magnets,y_size_magnets,z_stop_magnets[i_magnet]);
-
-      vec_eve_magnets[i_magnet]->SetMainColor(color_magnets[i_magnet]);
-      vec_eve_magnets[i_magnet]->SetMainTransparency(75); // the higher the value the more transparent
-      gEve->AddElement(vec_eve_magnets[i_magnet]);
-    }
-
+  Magnets magnets(magnetInfo);
+  magnets.draw();
   std::vector<TEveLine*> vec_particle_track;
   vec_particle_track.resize(1);
   vec_particle_track[0] = new TEveLine();
-
-
 
   //-------------------------------------------------------------------------------------------
   // Scanned sigma x (m) as a function of z (m) of the LHC beam  (John Jowett)
@@ -73,13 +52,41 @@ void v1_beam()
 
 
 
-  Int_t N_steps_used = 0;
-  Track_eta_pT_phi_q_xyz_m(TLV_particle->Px(),TLV_particle->Py(),TLV_particle->Pz(),0,pos_xyz[0],pos_xyz[1],pos_xyz[2],0.938,
-			   N_total_steps,step_size,N_steps_used); // fills track_pos_dir
-
-  for(Int_t i_step = 0; i_step < N_steps_used; i_step++)
+  unsigned N_steps_used = 0;
+  std::vector<double> itEnergies = Track_eta_pT_phi_q_xyz_m(magnets,
+							    TLV_particle->Px(),TLV_particle->Py(),TLV_particle->Pz(),
+							    0,
+							    pos_xyz[0],pos_xyz[1],pos_xyz[2],
+							    0.938,
+							    N_total_steps,
+							    step_size,
+							    N_steps_used); // fills track_pos_dir
+  std::cout << itEnergies.size() << std::endl;
+  for(int i = 0; i<itEnergies.size(); ++i) 
     {
-      vec_particle_track[0]        ->SetNextPoint(track_pos_dir[i_step][0],track_pos_dir[i_step][1],track_pos_dir[i_step][2]);
+      std::cout << itEnergies[i] << std::endl;
+      std::cout << std::to_string(itEnergies[i]) << std::endl;
+      std::cout << std::endl;
+    }
+    
+  std::string filename("track_pos.csv");
+  std::fstream file;
+  file.open(filename, std::ios_base::out);
+    
+  for(unsigned i_step = 0; i_step < N_steps_used; i_step++)
+    {
+      vec_particle_track[0]->SetNextPoint(track_pos_dir[i_step][0],track_pos_dir[i_step][1],track_pos_dir[i_step][2]);
+
+      if (!file.is_open()) 
+	std::cout << "failed to open " << filename << '\n';
+      else {
+	if(i_step==0)
+	  file << "x" << "," << "z" << "," << "energy" << std::endl;
+	//if(i_step%100==0)
+	file << std::to_string(track_pos_dir[i_step][0]) << "," << std::to_string(track_pos_dir[i_step][2]) << "," << std::to_string(itEnergies[i_step]) << std::endl;
+	std::cout << std::to_string(itEnergies[i_step]) << std::endl;
+      }
+      //f >> std::to_string(track_pos_dir[i_step][0]) >> std::endl;
       //printf("i_step: %d, pos: {%4.3f, %4.3f, %4.3f} \n",i_step,track_pos_dir[i_step][0],track_pos_dir[i_step][1],track_pos_dir[i_step][2]);
 
     }
@@ -92,11 +99,13 @@ void v1_beam()
   vec_particle_track[0] ->SetMainColor(kRed);
   vec_particle_track[0] ->SetMainAlpha(0.7);
   gEve->AddElement(vec_particle_track[0]);
-
   gEve->Redraw3D(kTRUE);
 }
 
-int main(int argc, char** argv) {
-  v1_beam();
+int main(int argc, char **argv) {
+  TApplication myapp("myapp", &argc, argv);
+  run();
+  myapp.Run();
   return 0;
 }
+

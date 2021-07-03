@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <array>
 #include <fstream>
 #include <sstream>
 
@@ -10,7 +11,8 @@
 #include <dirent.h>
 #include <errno.h>
 
-#include "TEveManager.h"
+#include <TApplication.h>
+#include <TEveManager.h>
 #include "TEveLine.h"
 #include "TEveBox.h"
 
@@ -28,6 +30,8 @@
 #include "TGLUtil.h"
 #include "TGLLightSet.h"
 #include "TGLCameraOverlay.h"
+
+#include "Math/Vector3D.h" // XYZVector
 
 #include "TString.h"
 #include "TH2D.h"

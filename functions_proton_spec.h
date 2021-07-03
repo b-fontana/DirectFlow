@@ -5,7 +5,7 @@
 static const Double_t part_mass   = 0.938; // GeV/c2
 static const Double_t delta_s     = 1.25; // step size for tracking in cm, usually 2.5
 static const Int_t N_total_steps = 3000; // number of steps for particle tracking, usually 300
-static const Int_t step_size     = 10; // step size in cm
+static const float step_size     = 1.f; // step size in cm
 static const Double_t c_light     = 29979245800.0; // (cm/s)
 static const Double_t e_charge    = 1.602176565E-19; // C = A*s
 static Double_t track_pos_dir[N_total_steps][6]; // [step][x,y,z,px,py,pz]
@@ -177,10 +177,14 @@ TVector3 Ali_forward_B_field(TVector3 pos)
 //------------------------------------------------------------------------------------------------------------------
 
 
-
 //------------------------------------------------------------------------------------------------------------------
-void Track_eta_pT_phi_q_xyz_m(Double_t px, Double_t py, Double_t pz, Int_t q, Double_t pos_x, Double_t pos_y, Double_t pos_z, Double_t mass,
-                                                    Int_t N_steps, Double_t step_size, Int_t &N_steps_used)
+std::vector<double> Track_eta_pT_phi_q_xyz_m(const Magnets& magnets,
+					     double px, double py, double pz,
+					     int q,
+					     double pos_x, double pos_y, double pos_z,
+					     double mass,
+					     int N_steps, double step_size,
+					     unsigned &N_steps_used)
 {
     // Track a particle through the STAR magnetic field with
     // pseudo-rapidity eta
@@ -192,18 +196,18 @@ void Track_eta_pT_phi_q_xyz_m(Double_t px, Double_t py, Double_t pz, Int_t q, Do
     // number of tracking steps N_steps
     // step size step_size (cm)
 
-    Double_t charge = 1.0;
+    double charge = 1.0;
     if(q == 1) charge = -1.0;
 
     charge *= e_charge; // C = A*s
 
     TLorentzVector lvector;
-    TVector3 part_pos[4];
-    TVector3 part_dir[3];
-    TVector3 part_vel[3];
-    TVector3 part_mom[3];
-    TVector3 B_field;
-    TVector3 F_field;
+    ROOT::Math::XYZVector part_pos[4];
+    ROOT::Math::XYZVector part_dir[3];
+    ROOT::Math::XYZVector part_vel[3];
+    ROOT::Math::XYZVector part_mom[3];
+    ROOT::Math::XYZVector B_field;
+    ROOT::Math::XYZVector F_field;
 
 
     lvector.SetXYZM(px,py,pz,mass);
@@ -214,19 +218,20 @@ void Track_eta_pT_phi_q_xyz_m(Double_t px, Double_t py, Double_t pz, Int_t q, Do
     part_vel[0] *= (c_light/(lvector.Gamma()*mass)); // p (GeV/c) = beta (c) *gamma*m0 (GeV/c2) -> (cm/s)
 
     //cout << "gamma = " << lvector.Gamma() << endl;
-    //Double_t original_phi = part_mom[0].Phi();
+    //double original_phi = part_mom[0].Phi();
 
-    //Double_t init_momentum = part_mom[0].Mag();
-    //Double_t init_pz       = part_mom[0].Pz();
+    //double init_momentum = part_mom[0].Mag();
+    //double init_pz       = part_mom[0].Pz();
 
     //cout << "eta = " << eta << ", pT = " << pT << ", p = " << init_momentum << ", pz = " << init_pz << endl;
 
-    Double_t delta_t = step_size/(c_light*lvector.Beta()); // s
-    Double_t alpha   = (part_mom[0].Mag()/part_vel[0].Mag())/1.8708026E16; // (GeV/c)/(cm/s) -> ((cm*kg)/s)/(cm/s) = kg
+    double delta_t = step_size/(c_light*lvector.Beta()); // s
+    double alpha   = ( TMath::Sqrt(part_mom[0].Mag2())/TMath::Sqrt(part_vel[0].Mag2()) ) / 1.8708026E16; // (GeV/c)/(cm/s) -> ((cm*kg)/s)/(cm/s) = kg
 
     // 1.8708026E16; // delta_p  (cm*kg)/s -> (GeV/c)
 
-    for(Int_t istep = 0; istep < N_steps; istep++)
+    std::vector<double> energies(N_steps);
+    for(int istep = 0; istep < N_steps; istep++)
     {
         track_pos_dir[istep][0] = part_pos[0].X();
         track_pos_dir[istep][1] = part_pos[0].Y();
@@ -248,7 +253,7 @@ void Track_eta_pT_phi_q_xyz_m(Double_t px, Double_t py, Double_t pz, Int_t q, Do
 
 
         //cout << "delta_t = " << delta_t << endl;
-        part_dir[0] *= (step_size/part_dir[0].Mag()); // direction to move without magnetic field in cm
+        part_dir[0] *= (step_size/TMath::Sqrt(part_dir[0].Mag2())); // direction to move without magnetic field in cm
         //cout << "part_dir[0] = (" << part_dir[0].X() << ", " << part_dir[0].Y() << ", " << part_dir[0].Z() << ")" << endl;
         part_pos[1] =  part_pos[0];
         part_pos[1] += part_dir[0]; // new position after delta_t without magnetic field
@@ -258,20 +263,21 @@ void Track_eta_pT_phi_q_xyz_m(Double_t px, Double_t py, Double_t pz, Int_t q, Do
         //cout << "Center of MF, part_pos[2] = (" << part_pos[2].X() << ", " << part_pos[2].Y() << ", " << part_pos[2].Z() << ")" << endl;
 
 
-        Double_t PosXYZ[3] = {part_pos[2].X(),part_pos[2].Y(),part_pos[2].Z()};
-        Double_t BXYZ[3];
+        double PosXYZ[3] = {part_pos[2].X(),part_pos[2].Y(),part_pos[2].Z()};
+        double BXYZ[3];
         //StarMag->Interpolate3DBfield(TMath::Sqrt(TMath::Power(part_pos[2].X(),2)+TMath::Power(part_pos[2].Y(),2)),part_pos[2].Z(),part_pos[2].Phi(),Br,Bz,Bphi); // kGauss, cm
         //StarMag->BField(PosXYZ,BXYZ); // <-
         //B_field.SetMagThetaPhi(TMath::Sqrt(TMath::Power(Br,2)+TMath::Power(Bz,2)),TMath::ATan2(Br,Bz),Bphi); // in kGauss
         //B_field.SetXYZ(BXYZ[0],BXYZ[1],BXYZ[2]); // <-
         //B_field *= 0.1; // kg/(A*s*s) // <-
 
-        B_field = Ali_forward_B_field(part_pos[2]);
+        //B_field = Ali_forward_B_field(part_pos[2]);
+	B_field = magnets.field(part_pos[2], 350.);
 
         //printf("B_field: {%f,%f,%f} \n",B_field.X(),B_field.Y(),B_field.Z());
 
 
-        Double_t Btot   = TMath::Power(B_field.Mag(),2);
+        double Btot   = B_field.Mag2();
 
         if(Btot == 0.0)
         {
@@ -279,22 +285,22 @@ void Track_eta_pT_phi_q_xyz_m(Double_t px, Double_t py, Double_t pz, Int_t q, Do
             //printf("istep: %d, pos: {%f,%f,%f} \n",istep,part_pos[0].X(),part_pos[0].Y(),part_pos[0].Z());
         }
 
-        if(Btot != 0.0)
+        if(0)
         {
-            Double_t q_c    = charge;
-            Double_t SqBtot = TMath::Sqrt(Btot);
-            Double_t SinB   = TMath::Sin(SqBtot*q_c*delta_t/alpha);
-            Double_t CosB   = TMath::Cos(SqBtot*q_c*delta_t/alpha);
+            double q_c    = charge;
+            double SqBtot = TMath::Sqrt(Btot);
+            double SinB   = TMath::Sin(SqBtot*q_c*delta_t/alpha);
+            double CosB   = TMath::Cos(SqBtot*q_c*delta_t/alpha);
 
-            Double_t Bx  = B_field.X();
-            Double_t By  = B_field.Y();
-            Double_t Bz  = B_field.Z();
+            double Bx  = B_field.X();
+            double By  = B_field.Y();
+            double Bz  = B_field.Z();
 
-            Double_t vx0 = part_vel[0].X();
-            Double_t vy0 = part_vel[0].Y();
-            Double_t vz0 = part_vel[0].Z();
+            double vx0 = part_vel[0].X();
+            double vy0 = part_vel[0].Y();
+            double vz0 = part_vel[0].Z();
 
-            Double_t term1  = (Bx*vx0 + By*vy0 + Bz*vz0);
+            double term1  = (Bx*vx0 + By*vy0 + Bz*vz0);
 
             part_vel[1].SetX((Bx*term1 + (By*By*vx0 - Bx*By*vy0 + Bz*(Bz*vx0 - Bx*vz0))*CosB + SqBtot*(Bz*vy0 - By*vz0)*SinB)/Btot);   // (cm/s)
             part_vel[1].SetY((By*term1 + (-Bx*By*vx0 + Bx*Bx*vy0 + Bz*(Bz*vy0 - By*vz0))*CosB + SqBtot*(-Bz*vx0 + Bx*vz0)*SinB)/Btot); // (cm/s)
@@ -319,11 +325,11 @@ void Track_eta_pT_phi_q_xyz_m(Double_t px, Double_t py, Double_t pz, Int_t q, Do
             part_vel[0] = part_vel[1];
             part_dir[0] = part_vel[0]; // new
 
-            printf("istep: %d, pos: {%4.8f, %4.8f, %4.8f}, B-field: {%4.5f, %4.5f, %4.5f}  \n",istep,part_pos[0].X(),part_pos[0].Y(),part_pos[0].Z(),Bx,By,Bz);
+            // printf("istep: %d, pos: {%4.8f, %4.8f, %4.8f}, B-field: {%4.5f, %4.5f, %4.5f}  \n",istep,part_pos[0].X(),part_pos[0].Y(),part_pos[0].Z(),Bx,By,Bz);
 
         }
 
-        if(0)
+        if(1)
         {
 
             //cout << "B_field = (" << B_field.X() << ", " << B_field.Y() << ", " << B_field.Z() << ")" << endl;
@@ -336,10 +342,10 @@ void Track_eta_pT_phi_q_xyz_m(Double_t px, Double_t py, Double_t pz, Int_t q, Do
             //cout << "delta_p, part_dir[1] = (" << part_dir[1].X() << ", " << part_dir[1].Y() << ", " << part_dir[1].Z() << "), step_size = " << step_size << endl;
             part_mom[1] =  part_mom[0];
             part_mom[1] += part_dir[1];
-            part_mom[1] *= part_mom[0].Mag()/part_mom[1].Mag(); // make sure that total momentum doesn't change
+            part_mom[1] *= TMath::Sqrt(part_mom[0].Mag2()) / TMath::Sqrt(part_mom[1].Mag2()); // make sure that total momentum doesn't change
 
             part_dir[2] =  part_mom[1];
-            part_dir[2] *= (step_size/part_mom[1].Mag()); // direction to move with magnetic field in cm
+            part_dir[2] *= (step_size/TMath::Sqrt(part_mom[1].Mag2())); // direction to move with magnetic field in cm
             //cout << "MF dir vector, part_dir[2] = (" << part_dir[2].X() << ", " << part_dir[2].Y() << ", " << part_dir[2].Z() << "), step_size = " << step_size << endl;
             part_pos[3] =  part_pos[0];
             part_pos[3] += part_dir[2]; // new position after delta_t with magnetic field
@@ -350,17 +356,19 @@ void Track_eta_pT_phi_q_xyz_m(Double_t px, Double_t py, Double_t pz, Int_t q, Do
             part_vel[0] = part_dir[0]; // (GeV/c)
             part_vel[0] *= (c_light/(lvector.Gamma()*part_mass)); // p (GeV/c) = beta (c) *gamma*m0 (GeV/c2) (cm/s)
 
+	    energies[istep] = TMath::Sqrt(part_mom[0].Mag2() + 0.938*0.938);
             //cout << "istep = " << istep << ", z = " << part_pos[0].Z() << ", phi = " << part_mom[0].Phi() << endl;
         }
 
 
         N_steps_used = istep;
         //if(part_pos[0].Perp() > 200.0) break;
-        if(fabs(part_pos[0].Z()) > 7000.0) break;
+        if(fabs(part_pos[0].Z()) > 9000.0) break;
         //cout << "Total momentum = " << part_mom[0].Mag() << endl;
         //cout << "New momentum = (" << part_mom[0].Px() << ", " << part_mom[0].Py() << ", " << part_mom[0].Pz() << "), pos = ("
         //    << part_pos[0].X() << ", " << part_pos[0].Y() << ", " << part_pos[0].Z() << ")" << endl;
     }
+    return energies;
 }
 //------------------------------------------------------------------------------------------------------------------
 
