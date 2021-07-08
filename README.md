@@ -19,10 +19,17 @@ Upon successful compilation you should get
 Executable v1_beam.exe created.
 ```
 
+To clean the object files and executable:
+
+```bash
+make clean
+```
+
 #### Running
 
 ```
 ./v1_beam.exe
 ```
+
 
 
