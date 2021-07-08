@@ -87,6 +87,8 @@ void v1_beam()
 
   HistName = "track ";
   HistName += 0;
+  std::cout << HistName.Data() << std::endl;
+  std::exit(0);
   vec_particle_track[0] ->SetName(HistName.Data());
   vec_particle_track[0] ->SetLineStyle(1);
   vec_particle_track[0] ->SetLineWidth(5);

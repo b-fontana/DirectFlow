@@ -1,4 +1,33 @@
-#include "./functions.h"
+#ifndef GEOMETRY_H
+#define GEOMETRY_H
+
+#include <string>
+#include <vector>
+
+#include <TEveManager.h>
+#include "TEveLine.h"
+#include "TEveBox.h"
+
+#include "TGeoManager.h"
+#include "TGeoMaterial.h"
+#include "TGeoMedium.h"
+#include "TGeoVolume.h"
+#include "TGeoMatrix.h"
+
+#include "TGLViewer.h"
+#include "TGLSAViewer.h"
+#include "TGLCamera.h"
+#include "TGLPerspectiveCamera.h"
+#include "TGFrame.h"
+#include "TGLUtil.h"
+#include "TGLLightSet.h"
+#include "TGLCameraOverlay.h"
+
+#include "TROOT.h"
+#include "TMath.h"
+#include "Math/Vector3D.h" // XYZVector
+
+//#include "./functions.h"
 
 class Geometry {
  public:
@@ -122,3 +151,5 @@ class Magnets: public Geometry {
     return z<0 ? -1.f : 1.f;
   }
 };
+
+#endif //GEOMETRY_H

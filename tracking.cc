@@ -1,12 +1,16 @@
-const Track& SimParticle::track(const Magnets& magnets, TrackMode mode ) {
-    
-  if(mode == TrackMode::Euler) {
+#include "./tracking.h"
+
+const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode ) {
+
+  const Track* t = nullptr;
+  
+  if(mode == tracking::TrackMode::Euler) {
       
-    if(mTrackCheck[TrackMode::Euler] == false) {
-      mTracks[TrackMode::Euler] = track_euler(magnets);
-      mTrackCheck[TrackMode::Euler] = true;
+    if(mTrackCheck[tracking::TrackMode::Euler] == false) {
+      mTracks[tracking::TrackMode::Euler] = track_euler(magnets);
+      mTrackCheck[tracking::TrackMode::Euler] = true;
     }
-    const Track& t = mTracks[TrackMode::Euler];
+    t = &( mTracks[tracking::TrackMode::Euler] );
       
   }
   /* else if(mode == TrackMode::RungeKutta4) { */
@@ -24,10 +28,10 @@ const Track& SimParticle::track(const Magnets& magnets, TrackMode mode ) {
 
   }
     
-  return t;
+  return *t;
 }
 
-Track& SimParticle::track_euler(const Magnets& magnets)
+Track SimParticle::track_euler(const Magnets& magnets)
 {
   // Track a particle through the STAR magnetic field with
   // pseudo-rapidity eta
@@ -65,7 +69,7 @@ Track& SimParticle::track_euler(const Magnets& magnets)
 
   //cout << "eta = " << eta << ", pT = " << pT << ", p = " << init_momentum << ", pz = " << init_pz << endl;
 
-  double delta_t = step_size/(mCvelocity*lvector.Beta()); // s
+  double delta_t = mStepSize/(mCvelocity*lvector.Beta()); // s
   double alpha   = ( TMath::Sqrt(part_mom[0].Mag2())/TMath::Sqrt(part_vel[0].Mag2()) ) / 1.8708026E16; // (GeV/c)/(cm/s) -> ((cm*kg)/s)/(cm/s) = kg
 
   // 1.8708026E16; // delta_p  (cm*kg)/s -> (GeV/c)
@@ -76,12 +80,13 @@ Track& SimParticle::track_euler(const Magnets& magnets)
   energies.reserve(mNsteps);
   positions.reserve(mNsteps);
   directions.reserve(mNsteps);
-	
-  for(int istep=0; istep<mNsteps; istep++)
+
+  unsigned nStepsUsed = 0;
+  while(nStepsUsed<mNsteps)
     {
-      XYZ tmppos; tmpos.SetXYZ( part_pos[0].X(), part_pos[0].Y(), part_pos[0].Z() );
+      XYZ tmppos; tmppos.SetXYZ( part_pos[0].X(), part_pos[0].Y(), part_pos[0].Z() );
       positions.push_back( tmppos );
-      XYZ tmpdir; tmdir.SetXYZ( part_dir[0].X(), part_dir[0].Y(), part_dir[0].Z() );
+      XYZ tmpdir; tmpdir.SetXYZ( part_dir[0].X(), part_dir[0].Y(), part_dir[0].Z() );
       directions.push_back( tmpdir );
 
       //printf("istep: %d, pos: {%4.8f, %4.8f, %4.8f} \n",istep,track_pos_dir[istep][0],track_pos_dir[istep][1],track_pos_dir[istep][2]);
@@ -97,7 +102,7 @@ Track& SimParticle::track_euler(const Magnets& magnets)
 
 
       //cout << "delta_t = " << delta_t << endl;
-      part_dir[0] *= (step_size/TMath::Sqrt(part_dir[0].Mag2())); // direction to move without magnetic field in cm
+      part_dir[0] *= (mStepSize/TMath::Sqrt(part_dir[0].Mag2())); // direction to move without magnetic field in cm
       //cout << "part_dir[0] = (" << part_dir[0].X() << ", " << part_dir[0].Y() << ", " << part_dir[0].Z() << ")" << endl;
       part_pos[1] =  part_pos[0];
       part_pos[1] += part_dir[0]; // new position after delta_t without magnetic field
@@ -142,7 +147,7 @@ Track& SimParticle::track_euler(const Magnets& magnets)
       part_mom[1] *= TMath::Sqrt(part_mom[0].Mag2()) / TMath::Sqrt(part_mom[1].Mag2()); // make sure that total momentum doesn't change
 
       part_dir[2] =  part_mom[1];
-      part_dir[2] *= (step_size/TMath::Sqrt(part_mom[1].Mag2())); // direction to move with magnetic field in cm
+      part_dir[2] *= (mStepSize/TMath::Sqrt(part_mom[1].Mag2())); // direction to move with magnetic field in cm
       //cout << "MF dir vector, part_dir[2] = (" << part_dir[2].X() << ", " << part_dir[2].Y() << ", " << part_dir[2].Z() << "), step_size = " << step_size << endl;
       part_pos[3] =  part_pos[0];
       part_pos[3] += part_dir[2]; // new position after delta_t with magnetic field
@@ -157,7 +162,8 @@ Track& SimParticle::track_euler(const Magnets& magnets)
       //cout << "istep = " << istep << ", z = " << part_pos[0].Z() << ", phi = " << part_mom[0].Phi() << endl;
 
 
-      mNstepsUsed[TrackMode::Euler] = istep;
+      ++nStepsUsed;
+      
       //if(part_pos[0].Perp() > 200.0) break;
       if(fabs(part_pos[0].Z()) > 9000.0) break;
       //cout << "Total momentum = " << part_mom[0].Mag() << endl;
@@ -165,5 +171,5 @@ Track& SimParticle::track_euler(const Magnets& magnets)
       //    << part_pos[0].X() << ", " << part_pos[0].Y() << ", " << part_pos[0].Z() << ")" << endl;
     }
 
-  return Track(energies, positions, directions);
+  return Track(nStepsUsed, energies, positions, directions);
 }

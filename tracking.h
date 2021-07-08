@@ -1,8 +1,17 @@
 #ifndef TRACKING_H
 #define TRACKING_H
 
-#include "./functions.h"
+//#include "./functions.h"
+#include "./geometry.h"
 #include <memory>
+
+#include "TROOT.h"
+#include "TLorentzVector.h"
+#include "Math/Vector3D.h" // XYZVector
+
+namespace tracking {
+  enum TrackMode { Euler=0, NMODES };
+}
 
 ////////////////////////////////////////////
 //TParticle has too much info
@@ -20,22 +29,24 @@ public:
 //simple structure to store track information
 ////////////////////////////////////////////
 class Track {
- public:
+public:
   template <typename T> 
-    using Vec = std::vector<T>;  
+  using Vec = std::vector<T>;  
   using XYZ = ROOT::Math::XYZVector;
+
+  Track(): mEnergies(0), mPositions(0), mDirections(0), mNstepsUsed(0) {};
   
- Track(unsigned pNstepsUsed,
-       Vec<double> pEnergies, Vec<XYZ> pPositions, Vec<XYZ> pDirections)
-   : mNstepsUsed(pNstepsUsed),
-    mEnergies(pEnergies), mPositions(mPositions), mDirections(pDirections) {};
+  Track(unsigned pNstepsUsed,
+	Vec<double> pEnergies, Vec<XYZ> pPositions, Vec<XYZ> pDirections)
+    : mNstepsUsed(pNstepsUsed),
+      mEnergies(pEnergies), mPositions(mPositions), mDirections(pDirections) {};
     
   Vec<double> energies() const { return mEnergies; }
   Vec<XYZ> positions() const { return mPositions; }
   Vec<XYZ> directions() const { return mDirections; }
   unsigned steps_used() const { return mNstepsUsed; }
   
- private:
+private:
   Vec<double> mEnergies;
   Vec<XYZ> mPositions;
   Vec<XYZ> mDirections;
@@ -51,18 +62,21 @@ class SimParticle {
     using Vec = std::vector<T>;
   using XYZ = ROOT::Math::XYZVector;
   
-  enum class TrackMode { Euler=0, NMODES };
-  
  SimParticle(Particle pParticle)
-   : mParticle(pParticle) {};
+   : mParticle(pParticle),
+     mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES) {};
  SimParticle(Particle pParticle, unsigned pNsteps, double pStepSize)
-   : mParticle(pParticle), mNsteps(pNsteps), mStepSize(pStepSize) {};
+   : mParticle(pParticle),
+     mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES),
+     mNsteps(pNsteps), mStepSize(pStepSize) {};
 
-  const Track& track(const Magnets&, SimParticle::TrackMode);
+  const Track& track(const Magnets&, tracking::TrackMode);
     
  private:
-  Vec<Track> mTracks(TrackMode::NMODES);
-  Vec<bool> mTrackCheck(TrackMode::NMODES);
+  Vec<Track> mTracks;
+  Vec<bool> mTrackCheck;
+  // Vec<Track> mTracks(TrackMode::NMODES);
+  // Vec<bool> mTrackCheck(TrackMode::NMODES);
   
   Particle mParticle;
 
@@ -71,7 +85,7 @@ class SimParticle {
   unsigned mNsteps = 3000;
   float mStepSize = .1f;
 
-  const Track& track_euler(const Magnets& );
+  Track track_euler(const Magnets& );
   // const Track& track_rungekutta4(const Magnets& );
 };
 

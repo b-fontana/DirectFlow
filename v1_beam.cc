@@ -1,7 +1,110 @@
-#include "./functions.h"
+//#include "./functions.h"
 #include "./geometry.h"
 #include "./tracking.h"
-#include "./functions_proton_spec.h"
+//#include "./functions_proton_spec.h"
+
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <sstream>
+
+#include <sys/types.h>
+#include <dirent.h>
+#include <errno.h>
+
+#include <TApplication.h>
+#include <TEveManager.h>
+#include "TEveLine.h"
+#include "TEveBox.h"
+
+#include "TGeoManager.h"
+#include "TGeoMaterial.h"
+#include "TGeoMedium.h"
+#include "TGeoVolume.h"
+#include "TGeoMatrix.h"
+
+#include "TGLViewer.h"
+#include "TGLSAViewer.h"
+#include "TGLCamera.h"
+#include "TGLPerspectiveCamera.h"
+#include "TGFrame.h"
+#include "TGLUtil.h"
+#include "TGLLightSet.h"
+#include "TGLCameraOverlay.h"
+
+#include "Math/Vector3D.h" // XYZVector
+
+#include "TString.h"
+#include "TH2D.h"
+#include "TH3D.h"
+#include "THnSparse.h"
+#include "TCanvas.h"
+#include "TROOT.h"
+#include "TFile.h"
+#include "TStyle.h"
+#include "TGaxis.h"
+#include "TMath.h"
+#include "TColor.h"
+#include "TLatex.h"
+#include "TLegend.h"
+#include "TLegendEntry.h"
+#include "TExec.h"
+#include "TPolyMarker.h"
+#include "TVirtualPad.h"
+#include "TPolyLine.h"
+#include "TVector3.h"
+#include "TLorentzVector.h"
+#include "TPolyMarker3D.h"
+#include "TPolyLine3D.h"
+#include "TVirtualFitter.h"
+#include "Math/MinimizerOptions.h"
+#include "TVector.h"
+#include "TRandom.h"
+#include "TRandom3.h"
+#include "TGraph.h"
+#include "TGraph2D.h"
+#include "TGraphErrors.h"
+#include "TGraphAsymmErrors.h"
+#include "TF1.h"
+#include "TF2.h"
+#include "TProfile.h"
+#include "TProfile2D.h"
+#include "TFitResult.h"
+#include "TList.h"
+#include "TChain.h"
+//#include "Math/GSLMinimizer.h"
+//#include "Math/GSLSimAnMinimizer.h"
+#include "TMinuit.h"
+#include "TFitter.h"
+#include "Math/Functor.h"
+#include "TMinuitMinimizer.h"
+//#include <GSLMultiMinimizer.h>
+//#include "Math/GSLMultiMinimizer.h"
+//#include "Minuit2/Minuit2Minimizer.h"
+#include "TRotation.h"
+#include "TSVDUnfold.h"
+#include "TSystemDirectory.h"
+#include "TMatrixT.h"
+#include "TVector2.h"
+#include "TEllipse.h"
+#include "TPaveLabel.h"
+#include "TBox.h"
+#include "TSystemDirectory.h"
+#include "TAttImage.h"
+#include "TImage.h"
+#include "TPaletteAxis.h"
+#include "THelix.h"
+#include "TView.h"
+#include "TSystem.h"
+#include "TASImage.h"
+#include "TImage.h"
+#include "TArrayD.h"
+//#include "TPython.h"
+#include "TArrow.h"
+#include "TKey.h"
+#include "TSpectrum.h"
+#include "TNtuple.h"
+#include "TDatime.h"
 
 void run()
 {
@@ -57,10 +160,10 @@ void run()
 
   SimParticle simp(particle, 3000, .1f);
 
-  std::vector<double> itEnergies = simp.track(magnets, SimParticle::TrackMode::Euler ).energies();
-  std::vector<ROOT::Math::XYZVector> itPositions = simp.track(magnets, SimParticle::TrackMode::Euler ).positions();
-  std::vector<ROOT::Math::XYZVector> itDirections = simp.track(magnets, SimParticle::TrackMode::Euler ).directions();
-  unsigned nStepsUsed = simp.track(magnets, SimParticle::TrackMode::Euler ).steps_used();
+  std::vector<double> itEnergies = simp.track(magnets, tracking::TrackMode::Euler ).energies();
+  std::vector<ROOT::Math::XYZVector> itPositions = simp.track(magnets, tracking::TrackMode::Euler ).positions();
+  std::vector<ROOT::Math::XYZVector> itDirections = simp.track(magnets, tracking::TrackMode::Euler ).directions();
+  unsigned nStepsUsed = simp.track(magnets, tracking::TrackMode::Euler ).steps_used();
   
   std::cout << itEnergies.size() << std::endl;
   for(int i = 0; i<itEnergies.size(); ++i) 
@@ -94,9 +197,8 @@ void run()
 
     }
 
-  HistName = "track ";
-  HistName += 0;
-  particleTrackViz[0]->SetName(HistName.Data());
+  std::string histname = "track 0";
+  particleTrackViz[0]->SetName( histname.c_str() );
   particleTrackViz[0]->SetLineStyle(1);
   particleTrackViz[0]->SetLineWidth(5);
   particleTrackViz[0]->SetMainColor(kRed);
