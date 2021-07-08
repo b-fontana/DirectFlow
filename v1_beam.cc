@@ -1,6 +1,6 @@
 //#include "./functions.h"
-#include "./geometry.h"
-#include "./tracking.h"
+#include "include/geometry.h"
+#include "include/tracking.h"
 //#include "./functions_proton_spec.h"
 
 #include <iostream>
