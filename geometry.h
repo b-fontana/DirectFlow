@@ -100,8 +100,6 @@ class Magnets: public Geometry {
   ROOT::Math::XYZVector field(ROOT::Math::XYZVector pos, double scale=1.0) const {
     ROOT::Math::XYZVector Bfield(0.,0.,0.);
     double fieldDir = 1.0;
-    double signDir = 1.0;
-
     
     for(auto && info : mMagnetsInfo)
       {

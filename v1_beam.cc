@@ -158,25 +158,17 @@ void run()
   // Double_t sigma_x_LHC[37] = {0.0013124,0.0014062,0.0014562,0.0013687,0.0012687,0.0010499,0.0008562,0.0007999,0.0007562,0.0007812,0.0007624,0.0007437,0.0006249,0.0005249,0.0004062,0.0002812,0.0001437,4.37485e-05,0.0001312,0.0002687,0.0004374,0.0005624,0.0006562,0.0007187,0.0009124,0.0010812,0.0013124,0.0014312,0.0015624,0.0014874,0.0014249,0.0012374,0.0011374,0.0010187,0.0010062,0.0009812,0.0009687};
   //-------------------------------------------------------------------------------------------
 
-  SimParticle simp(particle, 3000, .1f);
+  SimParticle simp(particle, 3000, 1.f);
 
   std::vector<double> itEnergies = simp.track(magnets, tracking::TrackMode::Euler ).energies();
+
   std::vector<ROOT::Math::XYZVector> itPositions = simp.track(magnets, tracking::TrackMode::Euler ).positions();
   std::vector<ROOT::Math::XYZVector> itDirections = simp.track(magnets, tracking::TrackMode::Euler ).directions();
   unsigned nStepsUsed = simp.track(magnets, tracking::TrackMode::Euler ).steps_used();
-  
-  std::cout << itEnergies.size() << std::endl;
-  for(int i = 0; i<itEnergies.size(); ++i) 
-    {
-      std::cout << itEnergies[i] << std::endl;
-      std::cout << std::to_string(itEnergies[i]) << std::endl;
-      std::cout << std::endl;
-    }
     
   std::string filename("track_pos.csv");
   std::fstream file;
   file.open(filename, std::ios_base::out);
-    
   for(unsigned i_step = 0; i_step < nStepsUsed; i_step++)
     {
       particleTrackViz[0]->SetNextPoint( itPositions[i_step].X(), itPositions[i_step].Y(), itPositions[i_step].Z() );
@@ -185,9 +177,10 @@ void run()
 	std::cout << "failed to open " << filename << '\n';
       else {
 	if(i_step==0)
-	  file << "x" << "," << "z" << "," << "energy" << std::endl;
+	  file << "x,y,z,energy" << std::endl;
 	//if(i_step%100==0)
 	file << std::to_string( itPositions[i_step].X() ) << ","
+	     << std::to_string( itPositions[i_step].Y() ) << ","
 	     << std::to_string( itPositions[i_step].Z() ) << ","
 	     << std::to_string( itEnergies[i_step] )
 	     << std::endl;

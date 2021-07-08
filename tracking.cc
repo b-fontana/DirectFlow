@@ -7,6 +7,7 @@ const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode
   if(mode == tracking::TrackMode::Euler) {
       
     if(mTrackCheck[tracking::TrackMode::Euler] == false) {
+      mTracks[tracking::TrackMode::Euler] = Track();
       mTracks[tracking::TrackMode::Euler] = track_euler(magnets);
       mTrackCheck[tracking::TrackMode::Euler] = true;
     }
@@ -70,7 +71,6 @@ Track SimParticle::track_euler(const Magnets& magnets)
   //cout << "eta = " << eta << ", pT = " << pT << ", p = " << init_momentum << ", pz = " << init_pz << endl;
 
   double delta_t = mStepSize/(mCvelocity*lvector.Beta()); // s
-  double alpha   = ( TMath::Sqrt(part_mom[0].Mag2())/TMath::Sqrt(part_vel[0].Mag2()) ) / 1.8708026E16; // (GeV/c)/(cm/s) -> ((cm*kg)/s)/(cm/s) = kg
 
   // 1.8708026E16; // delta_p  (cm*kg)/s -> (GeV/c)
 
@@ -112,26 +112,15 @@ Track SimParticle::track_euler(const Magnets& magnets)
       //cout << "Center of MF, part_pos[2] = (" << part_pos[2].X() << ", " << part_pos[2].Y() << ", " << part_pos[2].Z() << ")" << endl;
 
 
-      double PosXYZ[3] = {part_pos[2].X(),part_pos[2].Y(),part_pos[2].Z()};
-      double BXYZ[3];
-      //StarMag->Interpolate3DBfield(TMath::Sqrt(TMath::Power(part_pos[2].X(),2)+TMath::Power(part_pos[2].Y(),2)),part_pos[2].Z(),part_pos[2].Phi(),Br,Bz,Bphi); // kGauss, cm
-      //StarMag->BField(PosXYZ,BXYZ); // <-
-      //B_field.SetMagThetaPhi(TMath::Sqrt(TMath::Power(Br,2)+TMath::Power(Bz,2)),TMath::ATan2(Br,Bz),Bphi); // in kGauss
-      //B_field.SetXYZ(BXYZ[0],BXYZ[1],BXYZ[2]); // <-
-      //B_field *= 0.1; // kg/(A*s*s) // <-
-
-      //B_field = Ali_forward_B_field(part_pos[2]);
       B_field = magnets.field(part_pos[2], 350.);
-
       //printf("B_field: {%f,%f,%f} \n",B_field.X(),B_field.Y(),B_field.Z());
-
 
       double Btot   = B_field.Mag2();
 
-      if(Btot == 0.0)
+      if(Btot <= 0.0)
         {
 	  part_pos[0] = part_pos[1];
-	  //printf("istep: %d, pos: {%f,%f,%f} \n",istep,part_pos[0].X(),part_pos[0].Y(),part_pos[0].Z());
+	  throw std::range_error("Turn the magnetic field on!");
         }
 
       //cout << "B_field = (" << B_field.X() << ", " << B_field.Y() << ", " << B_field.Z() << ")" << endl;

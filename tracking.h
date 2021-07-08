@@ -34,23 +34,23 @@ public:
   using Vec = std::vector<T>;  
   using XYZ = ROOT::Math::XYZVector;
 
-  Track(): mEnergies(0), mPositions(0), mDirections(0), mNstepsUsed(0) {};
+ Track(): mNstepsUsed(0), mEnergies(0), mPositions(0), mDirections(0) {};
   
   Track(unsigned pNstepsUsed,
 	Vec<double> pEnergies, Vec<XYZ> pPositions, Vec<XYZ> pDirections)
     : mNstepsUsed(pNstepsUsed),
-      mEnergies(pEnergies), mPositions(mPositions), mDirections(pDirections) {};
-    
+    mEnergies(pEnergies), mPositions(pPositions), mDirections(pDirections) {};
+
+  unsigned steps_used() const { return mNstepsUsed; }
   Vec<double> energies() const { return mEnergies; }
   Vec<XYZ> positions() const { return mPositions; }
   Vec<XYZ> directions() const { return mDirections; }
-  unsigned steps_used() const { return mNstepsUsed; }
   
 private:
+  unsigned mNstepsUsed;
   Vec<double> mEnergies;
   Vec<XYZ> mPositions;
   Vec<XYZ> mDirections;
-  unsigned mNstepsUsed;
 };
 
 ////////////////////////////////////////////
@@ -64,22 +64,20 @@ class SimParticle {
   
  SimParticle(Particle pParticle)
    : mParticle(pParticle),
-     mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES) {};
+    mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES, false) {}
+  
  SimParticle(Particle pParticle, unsigned pNsteps, double pStepSize)
    : mParticle(pParticle),
-     mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES),
-     mNsteps(pNsteps), mStepSize(pStepSize) {};
+    mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES, false),
+    mNsteps(pNsteps), mStepSize(pStepSize) {};
 
   const Track& track(const Magnets&, tracking::TrackMode);
     
  private:
+  Particle mParticle;
   Vec<Track> mTracks;
   Vec<bool> mTrackCheck;
-  // Vec<Track> mTracks(TrackMode::NMODES);
-  // Vec<bool> mTrackCheck(TrackMode::NMODES);
   
-  Particle mParticle;
-
   static constexpr double mCvelocity = 29979245800.0; // (cm/s)
   static constexpr double mEcharge = 1.602176565E-19; // C = A*s
   unsigned mNsteps = 3000;
