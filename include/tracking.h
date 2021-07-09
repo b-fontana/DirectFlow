@@ -6,8 +6,8 @@
 #include <memory>
 
 #include "TROOT.h"
-#include "TLorentzVector.h"
 #include "Math/Vector3D.h" // XYZVector
+#include "Math/Vector4D.h" // LorentzVector
 
 namespace tracking {
   enum TrackMode { Euler=0, NMODES };

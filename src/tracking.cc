@@ -34,19 +34,21 @@ const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode
 
 Track SimParticle::track_euler(const Magnets& magnets)
 {
-  // Track a particle through the STAR magnetic field with
-  // pseudo-rapidity eta
-  // transverse momentum pT (GeV/c)
-  // azimuthal angle phi (rad)
-  // charge q (0 = +, 1 = -)
-  // z-vertex position z (cm)
-  // particle mass m (GeV/c^2)
-  // number of tracking steps N_steps
-  // step size step_size (cm)
+  /*
+  Track a particle through the magnetic field with
+  pseudo-rapidity eta
+  transverse momentum pT (GeV/c)
+  azimuthal angle phi (rad)
+  charge q (0 = +, 1 = -)
+  z-vertex position z (cm)
+  particle mass m (GeV/c^2)
+  number of tracking steps N_steps
+  step size step_size (cm)
+  */
   
   double charge = mParticle.charge * mEcharge; // C = A*s
 
-  TLorentzVector lvector;
+  ROOT::Math::PxPyPzMVector lvector( mParticle.mom.X(), mParticle.mom.Y(), mParticle.mom.Z(), mParticle.mass );
   XYZ part_pos[4];
   XYZ part_dir[3];
   XYZ part_vel[3];
@@ -54,10 +56,10 @@ Track SimParticle::track_euler(const Magnets& magnets)
   XYZ B_field;
   XYZ F_field;
 
-
-  lvector.SetXYZM( mParticle.mom.X(), mParticle.mom.Y(), mParticle.mom.Z(), mParticle.mass);
-  part_pos[0].SetXYZ( mParticle.pos.X(), mParticle.pos.Y(), mParticle.pos.Z());
-  part_mom[0].SetXYZ(lvector.Px(),lvector.Py(),lvector.Pz()); // (GeV/c)
+  // part_pos[0].SetXYZ( mParticle.pos.X(), mParticle.pos.Y(), mParticle.pos.Z() );
+  part_pos[0] = mParticle.pos;
+  //  part_mom[0].SetXYZ( lvector.Px(), lvector.Py(), lvector.Pz() ); // (GeV/c)
+  part_mom[0] = lvector.Vect(); // (GeV/c)
   part_dir[0] = part_mom[0]; // (GeV/c)
   part_vel[0] = part_dir[0]; // (GeV/c)
   part_vel[0] *= (mCvelocity/(lvector.Gamma()*mParticle.mass)); // p (GeV/c) = beta (c) *gamma*m0 (GeV/c2) -> (cm/s)
@@ -115,37 +117,35 @@ Track SimParticle::track_euler(const Magnets& magnets)
       B_field = magnets.field(part_pos[2], 350.);
       //printf("B_field: {%f,%f,%f} \n",B_field.X(),B_field.Y(),B_field.Z());
 
-      double Btot   = B_field.Mag2();
+      double Btot = B_field.Mag2();
 
-      if(Btot <= 0.0)
-        {
+      if(Btot == 0.0)
 	  part_pos[0] = part_pos[1];
-	  throw std::range_error("Turn the magnetic field on!");
-        }
+      else
+	{
+	  // F = q*v X B
+	  F_field = charge*part_vel[0].Cross(B_field); // (A*s)*(cm/s)*(kg/(A*s*s)) = (cm*kg)/(s*s)
 
-      //cout << "B_field = (" << B_field.X() << ", " << B_field.Y() << ", " << B_field.Z() << ")" << endl;
-      // F = q*v X B
-      F_field = charge*part_vel[0].Cross(B_field); // (A*s)*(cm/s)*(kg/(A*s*s)) = (cm*kg)/(s*s)
+	  // F = (dp/dt)
+	  part_dir[1] =  F_field; // (cm*kg)/(s*s)
+	  part_dir[1] *= delta_t*1.8708026E16; // delta_p  (cm*kg)/s -> (GeV/c)
+	  //cout << "delta_p, part_dir[1] = (" << part_dir[1].X() << ", " << part_dir[1].Y() << ", " << part_dir[1].Z() << "), step_size = " << step_size << endl;
+	  part_mom[1] =  part_mom[0];
+	  part_mom[1] += part_dir[1];
+	  part_mom[1] *= TMath::Sqrt(part_mom[0].Mag2()) / TMath::Sqrt(part_mom[1].Mag2()); // make sure that total momentum doesn't change
 
-      // F = (dp/dt)
-      part_dir[1] =  F_field; // (cm*kg)/(s*s)
-      part_dir[1] *= delta_t*1.8708026E16; // delta_p  (cm*kg)/s -> (GeV/c)
-      //cout << "delta_p, part_dir[1] = (" << part_dir[1].X() << ", " << part_dir[1].Y() << ", " << part_dir[1].Z() << "), step_size = " << step_size << endl;
-      part_mom[1] =  part_mom[0];
-      part_mom[1] += part_dir[1];
-      part_mom[1] *= TMath::Sqrt(part_mom[0].Mag2()) / TMath::Sqrt(part_mom[1].Mag2()); // make sure that total momentum doesn't change
+	  part_dir[2] =  part_mom[1];
+	  part_dir[2] *= (mStepSize/TMath::Sqrt(part_mom[1].Mag2())); // direction to move with magnetic field in cm
+	  //cout << "MF dir vector, part_dir[2] = (" << part_dir[2].X() << ", " << part_dir[2].Y() << ", " << part_dir[2].Z() << "), step_size = " << step_size << endl;
+	  part_pos[3] =  part_pos[0];
+	  part_pos[3] += part_dir[2]; // new position after delta_t with magnetic field
 
-      part_dir[2] =  part_mom[1];
-      part_dir[2] *= (mStepSize/TMath::Sqrt(part_mom[1].Mag2())); // direction to move with magnetic field in cm
-      //cout << "MF dir vector, part_dir[2] = (" << part_dir[2].X() << ", " << part_dir[2].Y() << ", " << part_dir[2].Z() << "), step_size = " << step_size << endl;
-      part_pos[3] =  part_pos[0];
-      part_pos[3] += part_dir[2]; // new position after delta_t with magnetic field
-
-      part_pos[0] = part_pos[3];
-      part_mom[0] = part_mom[1];
-      part_dir[0] = part_mom[0]; // (GeV/c)
-      part_vel[0] = part_dir[0]; // (GeV/c)
-      part_vel[0] *= (mCvelocity/(lvector.Gamma()*mParticle.mass)); // p (GeV/c) = beta (c) *gamma*m0 (GeV/c2) (cm/s)
+	  part_pos[0] = part_pos[3];
+	  part_mom[0] = part_mom[1];
+	  part_dir[0] = part_mom[0]; // (GeV/c)
+	  part_vel[0] = part_dir[0]; // (GeV/c)
+	  part_vel[0] *= (mCvelocity/(lvector.Gamma()*mParticle.mass)); // p (GeV/c) = beta (c) *gamma*m0 (GeV/c2) (cm/s)
+	}
 
       energies.push_back( TMath::Sqrt(part_mom[0].Mag2() + 0.938*0.938) );
       //cout << "istep = " << istep << ", z = " << part_pos[0].Z() << ", phi = " << part_mom[0].Phi() << endl;

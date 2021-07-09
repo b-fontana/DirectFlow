@@ -2,8 +2,15 @@ CC = g++
 EXEC = v1_beam.exe
 RM = rm -f
 
-DEBUG_LEVEL     = -g
-EXTRA_CCFLAGS   = -Wall -std=c++17
+DEBUG_LEVEL     = -g -fdiagnostics-color=always
+EXTRA_CCFLAGS   = -Wall -std=c++17 -O -pedantic -pedantic-errors -Wformat -Wformat=2 \
+	-Wformat-nonliteral -Wformat-security  \
+        -Wformat-y2k \
+        -Wimport  -Winit-self  -Winline \
+        -Winvalid-pch   \
+        -Wunsafe-loop-optimizations -Wmissing-braces \
+        -Wmissing-field-initializers -Wmissing-format-attribute   \
+        -Wmissing-include-dirs -Wmissing-noreturn
 CXXFLAGS        = $(DEBUG_LEVEL) $(EXTRA_CCFLAGS)
 CCFLAGS         = $(CXXFLAGS)
 ROOTFLAGS = `root-config --cflags --ldflags --evelibs` -lMinuit -lrt
