@@ -22,8 +22,8 @@ void run()
   //define the initial properties of the incident particle
   Particle particle;
   particle.pos = ROOT::Math::XYZVector(0.0, 0.0, -6900.0); // cm
-  particle.mom = ROOT::Math::XYZVector(0.0, 0.0, 1500.0); // GeV
-  particle.mass = 0.938; // GeV
+  particle.mom = ROOT::Math::XYZVector(0.0, 0.0, 1500.0); // GeV/c
+  particle.mass = 0.938; // GeV/c^2
   particle.energy = TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
   particle.charge = +1;
   
@@ -75,9 +75,8 @@ void run()
   std::vector<double> itEnergies = simp.track(magnets, tracking::TrackMode::Euler ).energies();
 
   std::vector<ROOT::Math::XYZVector> itPositions = simp.track(magnets, tracking::TrackMode::Euler ).positions();
-  std::vector<ROOT::Math::XYZVector> itDirections = simp.track(magnets, tracking::TrackMode::Euler ).directions();
+  std::vector<ROOT::Math::XYZVector> itMomenta = simp.track(magnets, tracking::TrackMode::Euler ).momenta();
   unsigned nStepsUsed = simp.track(magnets, tracking::TrackMode::Euler ).steps_used();
-  std::cout << nStepsUsed << std::endl;
     
   std::string filename("track_pos.csv");
   std::fstream file;

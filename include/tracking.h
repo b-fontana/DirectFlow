@@ -34,23 +34,23 @@ public:
   using Vec = std::vector<T>;  
   using XYZ = ROOT::Math::XYZVector;
 
- Track(): mNstepsUsed(0), mEnergies(0), mPositions(0), mDirections(0) {};
+ Track(): mNstepsUsed(0), mEnergies(0), mPositions(0), mMomenta(0) {};
   
   Track(unsigned pNstepsUsed,
-	Vec<double> pEnergies, Vec<XYZ> pPositions, Vec<XYZ> pDirections)
+	Vec<double> pEnergies, Vec<XYZ> pPositions, Vec<XYZ> pMomenta)
     : mNstepsUsed(pNstepsUsed),
-    mEnergies(pEnergies), mPositions(pPositions), mDirections(pDirections) {};
+    mEnergies(pEnergies), mPositions(pPositions), mMomenta(pMomenta) {};
 
   unsigned steps_used() const { return mNstepsUsed; }
   Vec<double> energies() const { return mEnergies; }
   Vec<XYZ> positions() const { return mPositions; }
-  Vec<XYZ> directions() const { return mDirections; }
+  Vec<XYZ> momenta() const { return mMomenta; }
   
 private:
   unsigned mNstepsUsed;
   Vec<double> mEnergies;
   Vec<XYZ> mPositions;
-  Vec<XYZ> mDirections;
+  Vec<XYZ> mMomenta;
 };
 
 ////////////////////////////////////////////
@@ -78,7 +78,7 @@ class SimParticle {
   Vec<Track> mTracks;
   Vec<bool> mTrackCheck;
   
-  static constexpr double mCvelocity = 29979245800.0; // (cm/s)
+  static constexpr double mSpeedOfLight = 29979245800.0; // (cm/s)
   static constexpr double mEcharge = 1.602176565E-19; // C = A*s
   unsigned mNsteps = 3000;
   float mStepSize = .1f;
