@@ -10,7 +10,7 @@
 #include "Math/Vector4D.h" // LorentzVector
 
 namespace tracking {
-  enum TrackMode { Euler=0, NMODES };
+  enum TrackMode { Euler=0, RungeKutta4, NMODES };
 }
 
 ////////////////////////////////////////////
@@ -61,6 +61,7 @@ class SimParticle {
   template <typename T> 
     using Vec = std::vector<T>;
   using XYZ = ROOT::Math::XYZVector;
+  using Ltz = ROOT::Math::PxPyPzMVector;
   
  SimParticle(Particle pParticle)
    : mParticle(pParticle),
@@ -83,8 +84,10 @@ class SimParticle {
   unsigned mNsteps = 3000;
   float mStepSize = .1f;
 
-  Track track_euler(const Magnets& );
-  // const Track& track_rungekutta4(const Magnets& );
+  XYZ calc_relativistic_velocity(const XYZ&, double, double) const;
+  XYZ calc_lorentz_force(double, const XYZ&, const XYZ&) const;
+  Track track_euler( const Magnets& );
+  Track track_rungekutta4( const Magnets& );
 };
 
 #endif // TRACKING_H

@@ -21,7 +21,7 @@ void run()
 
   //define the initial properties of the incident particle
   Particle particle;
-  particle.pos = ROOT::Math::XYZVector(0.0, 0.0, -6900.0); // cm
+  particle.pos = ROOT::Math::XYZVector(0.0, 0.0, -7000.0); // cm
   particle.mom = ROOT::Math::XYZVector(0.0, 0.0, 1500.0); // GeV/c
   particle.mass = 0.938; // GeV/c^2
   particle.energy = TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
@@ -50,7 +50,6 @@ void run()
   					    100., 100.},
   };
 
-  //define the magnetic field
   // std::vector<Magnets::Magnet> magnetInfo{ {Magnets::DipoleY,
   // 					    "D1_neg",
   // 					    kGreen,
@@ -70,13 +69,16 @@ void run()
   // Double_t sigma_x_LHC[37] = {0.0013124,0.0014062,0.0014562,0.0013687,0.0012687,0.0010499,0.0008562,0.0007999,0.0007562,0.0007812,0.0007624,0.0007437,0.0006249,0.0005249,0.0004062,0.0002812,0.0001437,4.37485e-05,0.0001312,0.0002687,0.0004374,0.0005624,0.0006562,0.0007187,0.0009124,0.0010812,0.0013124,0.0014312,0.0015624,0.0014874,0.0014249,0.0012374,0.0011374,0.0010187,0.0010062,0.0009812,0.0009687};
   //-------------------------------------------------------------------------------------------
 
-  SimParticle simp(particle, 3000, 1.f);
+  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 3000, 3000 }};
+  std::array<double, tracking::TrackMode::NMODES> stepsize = {{ 1.f, .1f }};
 
-  std::vector<double> itEnergies = simp.track(magnets, tracking::TrackMode::Euler ).energies();
+  tracking::TrackMode mode = tracking::TrackMode::RungeKutta4;
 
-  std::vector<ROOT::Math::XYZVector> itPositions = simp.track(magnets, tracking::TrackMode::Euler ).positions();
-  std::vector<ROOT::Math::XYZVector> itMomenta = simp.track(magnets, tracking::TrackMode::Euler ).momenta();
-  unsigned nStepsUsed = simp.track(magnets, tracking::TrackMode::Euler ).steps_used();
+  SimParticle simp(particle, nsteps[mode], stepsize[mode]);
+  std::vector<double> itEnergies = simp.track(magnets, mode ).energies();
+  std::vector<ROOT::Math::XYZVector> itPositions = simp.track(magnets, mode ).positions();
+  std::vector<ROOT::Math::XYZVector> itMomenta = simp.track(magnets, mode ).momenta();
+  unsigned nStepsUsed = simp.track(magnets, mode ).steps_used();
     
   std::string filename("track_pos.csv");
   std::fstream file;
