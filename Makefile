@@ -6,15 +6,18 @@ DEBUG_LEVEL     = -g -fdiagnostics-color=always
 EXTRA_CCFLAGS   = -Wall -std=c++17 -O -pedantic -pedantic-errors -Wformat -Wformat=2 \
 	-Wformat-nonliteral -Wformat-security  \
         -Wformat-y2k \
-        -Wimport  -Winit-self  -Winline \
-        -Winvalid-pch   \
-        -Wunsafe-loop-optimizations -Wmissing-braces \
-        -Wmissing-field-initializers -Wmissing-format-attribute   \
-        -Wmissing-include-dirs -Wmissing-noreturn
+        -Wimport  -Winit-self \
+	-Winvalid-pch   \
+	-Wunsafe-loop-optimizations -Wmissing-braces \
+	-Wmissing-field-initializers -Wmissing-format-attribute   \
+	-Wmissing-include-dirs -Wmissing-noreturn
 CXXFLAGS        = $(DEBUG_LEVEL) $(EXTRA_CCFLAGS)
 CCFLAGS         = $(CXXFLAGS)
+
 ROOTFLAGS = `root-config --cflags --ldflags --evelibs` -lMinuit -lrt
 OPENGLFLAGS = -L/usr/lib/x86_64-linux-gnu/ -lGL -lGLX -lGLdispatch
+BOOSTFLAGS = -L/usr/local/boost/lib/ -lboost_program_options -I/usr/local/boost/include/
+EXTRAFLAGS = $(ROOTFLAGS) $(OPENGLFLAGS) $(BOOSTFLAGS)
 
 BASEDIR := $(shell pwd)
 SRCDIR  := src
@@ -34,14 +37,14 @@ OBJS := $(patsubst %.cc, %.o, $(SRCS))
 all: $(EXEC)
 
 $(EXEC): $(OBJS) ;
-	$(CC) $(CCFLAGS) $^ $(ROOTFLAGS) $(OPENGLFLAGS) -o $@
+	$(CC) $(CCFLAGS) $^ $(EXTRAFLAGS) -o $@
 	@echo Executable $(EXEC) created.
 
 %.o: %.cc
-	$(CC) $(CCFLAGS) -c $< $(ROOTFLAGS) -I$(BASEDIR) -o $@
+	$(CC) $(CCFLAGS) -c $< $(EXTRAFLAGS) -I$(BASEDIR) -o $@
 
 $(SRCDIR)/%.o: $(SRCDIR)/%.cc
-	$(CC) $(CCFLAGS) -c $< $(ROOTFLAGS) -I$(BASEDIR) -o $@
+	$(CC) $(CCFLAGS) -c $< $(EXTRAFLAGS) -I$(BASEDIR) -o $@
 
 clean:
 	$(RM) $(OBJS) $(EXEC)

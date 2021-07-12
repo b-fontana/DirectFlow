@@ -2,8 +2,8 @@
 
 #### Prerequisites
 
-You have to install [ROOT](https://root.cern/). This code was tested with ```ROOT```'s [```conda``` installation](https://root.cern/install/#conda).
-
+- [ROOT](https://root.cern/). This code was tested with ```ROOT```'s [```conda``` installation](https://root.cern/install/#conda).
+- [boost](https://www.boost.org/) + ```sudo apt-get install libboost-program-options-dev``` (Ubuntu)
 
 #### Compiling
 
@@ -28,8 +28,23 @@ make clean
 #### Running
 
 ```
-./v1_beam.exe
+./v1_beam.exe --mode euler
 ```
+
+**Arguments**
+
+- ```mode```: numerical differential equation solver [euler/rk4]
+
+
+#### Plotting
+
+```
+python python/fit_circle.py rk4
+```
+
+**Arguments**
+
+- ```mode```: see above
 
 
 

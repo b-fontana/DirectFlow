@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <boost/program_options.hpp>
 
 #include <TApplication.h>
 #include "Math/Vector3D.h" // XYZVector
@@ -14,11 +15,11 @@
 #include "TStyle.h"
 #include "TRandom.h"
 
-void run()
+void run(tracking::TrackMode mode)
 {
   gRandom->SetSeed(0);
   gStyle->SetPalette(56); // 53 = black body radiation, 56 = inverted black body radiator, 103 = sunset, 87 == light temperature
-
+ 
   //define the initial properties of the incident particle
   Particle particle;
   particle.pos = ROOT::Math::XYZVector(0.0, 0.0, -7000.0); // cm
@@ -69,10 +70,9 @@ void run()
   // Double_t sigma_x_LHC[37] = {0.0013124,0.0014062,0.0014562,0.0013687,0.0012687,0.0010499,0.0008562,0.0007999,0.0007562,0.0007812,0.0007624,0.0007437,0.0006249,0.0005249,0.0004062,0.0002812,0.0001437,4.37485e-05,0.0001312,0.0002687,0.0004374,0.0005624,0.0006562,0.0007187,0.0009124,0.0010812,0.0013124,0.0014312,0.0015624,0.0014874,0.0014249,0.0012374,0.0011374,0.0010187,0.0010062,0.0009812,0.0009687};
   //-------------------------------------------------------------------------------------------
 
-  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 30000, 3000 }};
-  std::array<double, tracking::TrackMode::NMODES> stepsize = {{ 1.f, 1.f }};
-
-  tracking::TrackMode mode = tracking::TrackMode::RungeKutta4;
+  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 300000, 300000 }};
+  std::array<double, tracking::TrackMode::NMODES> stepsize = {{ .01f, .01f }};
+  std::array<std::string, tracking::TrackMode::NMODES> suf = {{ "_euler", "_rk4" }};
 
   SimParticle simp(particle, nsteps[mode], stepsize[mode]);
   std::vector<double> itEnergies = simp.track(magnets, mode ).energies();
@@ -80,7 +80,7 @@ void run()
   std::vector<ROOT::Math::XYZVector> itMomenta = simp.track(magnets, mode ).momenta();
   unsigned nStepsUsed = simp.track(magnets, mode ).steps_used();
     
-  std::string filename("track_pos.csv");
+  std::string filename("data/track" + suf[mode] + ".csv");
   std::fstream file;
   file.open(filename, std::ios_base::out);
   for(unsigned i_step = 0; i_step < nStepsUsed; i_step++)
@@ -116,7 +116,44 @@ void run()
 
 int main(int argc, char **argv) {
   TApplication myapp("myapp", &argc, argv);
-  run();
+
+  tracking::TrackMode mode = tracking::TrackMode::Euler;
+  if(argc<2)
+    std::cerr << "No arguments passed." << std::endl;
+  else
+    {
+      namespace po = boost::program_options;
+      po::options_description desc("Options");
+      desc.add_options()
+	("mode", po::value<std::string>()->default_value("euler"), "numerical solver");
+      
+      po::variables_map vm;
+      po::store(po::parse_command_line(argc,argv,desc), vm);
+      po::notify(vm);
+
+      if(vm.count("mode")) {
+	std::string m_ = boost::any_cast<std::string>(vm["mode"].value());
+	if(m_ == "euler") mode = tracking::TrackMode::Euler;
+	else if(m_ == "rk4") mode = tracking::TrackMode::RungeKutta4;
+	else throw std::invalid_argument("This mode is not supported.");
+      }
+      else
+	throw std::invalid_argument("Please specify a mode");
+
+      std::cout << "--- Executable options ---" << std::endl;
+      for (const auto& it : vm) {
+	std::cout << it.first.c_str() << ": ";
+	auto& value = it.second.value();
+	if (auto v = boost::any_cast<uint32_t>(&value))
+	  std::cout << *v << std::endl;
+	else if (auto v = boost::any_cast<std::string>(&value))
+	  std::cout << *v << std::endl;
+	else
+	  std::cerr << "type missing" << std::endl;
+      }
+    }
+
+  run(mode);
   myapp.Run();
   return 0;
 }

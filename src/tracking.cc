@@ -173,23 +173,23 @@ Track SimParticle::track_rungekutta4(const Magnets& magnets)
 	  XYZ forceDelta = ( deltaT * 1.8708026E16 * 0.16666666 * (k1_p + 2*k2_p + 2*k3_p + k4_p) );
 	  XYZ partMomNext = partMom + forceDelta;
 
-	  std::cerr << nStepsUsed << std::endl;
-	  std::cerr << "K1: " << k1_p.X() << ", " << k1_p.Y() << ", " << k1_p.Z() << std::endl;
-	  std::cerr << "K2: " << k2_p.X() << ", " << k2_p.Y() << ", " << k2_p.Z() << std::endl;
-	  std::cerr << "K3: " << k3_p.X() << ", " << k3_p.Y() << ", " << k3_p.Z() << std::endl;
-	  std::cerr << "K4: " << k4_p.X() << ", " << k4_p.Y() << ", " << k4_p.Z() << std::endl;
+	  // std::cerr << nStepsUsed << std::endl;
+	  // std::cerr << "K1: " << k1_p.X() << ", " << k1_p.Y() << ", " << k1_p.Z() << std::endl;
+	  // std::cerr << "K2: " << k2_p.X() << ", " << k2_p.Y() << ", " << k2_p.Z() << std::endl;
+	  // std::cerr << "K3: " << k3_p.X() << ", " << k3_p.Y() << ", " << k3_p.Z() << std::endl;
+	  // std::cerr << "K4: " << k4_p.X() << ", " << k4_p.Y() << ", " << k4_p.Z() << std::endl;
 
-	  std::cerr << "P2: " << p2.X() << ", " << p2.Y() << ", " << p2.Z() << std::endl;
-	  std::cerr << "P3: " << p3.X() << ", " << p3.Y() << ", " << p3.Z() << std::endl;
-	  std::cerr << "P4: " << p4.X() << ", " << p4.Y() << ", " << p4.Z() << std::endl;
+	  // std::cerr << "P2: " << p2.X() << ", " << p2.Y() << ", " << p2.Z() << std::endl;
+	  // std::cerr << "P3: " << p3.X() << ", " << p3.Y() << ", " << p3.Z() << std::endl;
+	  // std::cerr << "P4: " << p4.X() << ", " << p4.Y() << ", " << p4.Z() << std::endl;
 
-	  std::cerr << "VEL2: " << vel2.X() << ", " << vel2.Y() << ", " << vel2.Z() << std::endl;
-	  std::cerr << "VEL3: " << vel3.X() << ", " << vel3.Y() << ", " << vel3.Z() << std::endl;
-	  std::cerr << "VEL4: " << vel4.X() << ", " << vel4.Y() << ", " << vel4.Z() << std::endl;
+	  // std::cerr << "VEL2: " << vel2.X() << ", " << vel2.Y() << ", " << vel2.Z() << std::endl;
+	  // std::cerr << "VEL3: " << vel3.X() << ", " << vel3.Y() << ", " << vel3.Z() << std::endl;
+	  // std::cerr << "VEL4: " << vel4.X() << ", " << vel4.Y() << ", " << vel4.Z() << std::endl;
 	  
-	  std::cerr << "Mom before: " << partMom.X() << ", " << partMom.Y() << ", " << partMom.Z() << std::endl;
-	  std::cerr << "Mom after: " << partMomNext.X() << ", " << partMomNext.Y() << ", " << partMomNext.Z() << std::endl;
-	  std::cerr << "Bfield: " << Bfield.X() << ", " << Bfield.Y() << ", " << Bfield.Z() << std::endl;
+	  // std::cerr << "Mom before: " << partMom.X() << ", " << partMom.Y() << ", " << partMom.Z() << std::endl;
+	  // std::cerr << "Mom after: " << partMomNext.X() << ", " << partMomNext.Y() << ", " << partMomNext.Z() << std::endl;
+	  // std::cerr << "Bfield: " << Bfield.X() << ", " << Bfield.Y() << ", " << Bfield.Z() << std::endl;
 
 	  //normalization of momentum?
 	  // double mag0 = TMath::Sqrt(partMom.Mag2());
@@ -198,20 +198,19 @@ Track SimParticle::track_rungekutta4(const Magnets& magnets)
 
 	  // v = dx/dt = p * c / (gamma * m) (runge-kutta k1 term)
 	  XYZ partPosNext = partPos + ( mStepSize * 0.16666666 * (partVel + 2*vel2 + 2*vel3 + vel4) / TMath::Sqrt(partVel.Mag2()) );
-	  //normalization of momentum?
-	  // double mag2 = TMath::Sqrt(partPos.Mag2());
-	  // double mag3 = TMath::Sqrt(partPosNext.Mag2());
-	  // partPosNext *= mag2 / mag3; // make sure that total momentum doesn't change
 	  partPos = partPosNext;
 
-	  // p (GeV/c) = beta (c) *gamma*m0 (GeV/c2) (cm/s)
-	  partMom = partMomNext;
+	  // momentum normalization
+	  double mag2 = TMath::Sqrt(partMom.Mag2());
+	  double mag3 = TMath::Sqrt(partMomNext.Mag2());
+	  partMom = partMomNext * mag2/mag3;
+	  
 	  Ltz ltz_for_next_vel( partMom.X(), partMom.Y(), partMom.Z(), mParticle.mass );
 	  partVel = calc_relativistic_velocity(partMom, ltz_for_next_vel.Gamma(), mParticle.mass);
 
-	  std::cout << "Positions: " << nStepsUsed << ", " << partPos.X() << ", " << partPos.Y() << ", " << partPos.Z() << std::endl;
-	  std::cout << "Velocities: " << nStepsUsed << ", " << partVel.X() << ", " << partVel.Y() << ", " << partVel.Z() << std::endl;
-	  std::cout << std::endl;
+	  // std::cout << "Positions: " << nStepsUsed << ", " << partPos.X() << ", " << partPos.Y() << ", " << partPos.Z() << std::endl;
+	  // std::cout << "Velocities: " << nStepsUsed << ", " << partVel.X() << ", " << partVel.Y() << ", " << partVel.Z() << std::endl;
+	  // std::cout << std::endl;
 
 	}
 

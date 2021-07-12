@@ -1,4 +1,4 @@
-import os
+import os, sys
 import pandas as pd
 import numpy as np 
 from scipy import optimize
@@ -10,13 +10,15 @@ output_file( os.path.basename(__file__)[:-2] + 'html' )
 
 #define constants
 DEBUG = True
+MOMTRUTH = 1500
+PROTONMASS = 0.938
 XMIN, XMAX = 1500, 3000
 YMIN, YMAX = 1000, 2500
 assert(XMAX-XMIN == YMAX-YMIN)
 CENTER_EST = 2100, 1600
 
 # get the data and shift it to get positive values
-df = pd.read_csv('track_pos.csv')
+df = pd.read_csv('data/track_' + sys.argv[1] + '.csv')
 df.x = df.x + 2000
 df.z = df.z + 9000
 dffilt = df # selection can be done here
@@ -42,11 +44,12 @@ residues = sum((Ri - R)**2)
 if DEBUG:
     print('Center: ', center)
     print('Radius: ', R)
-    print('Resiudes: ', residues)
+    print('Residues: ', residues)
 
 source = CDS( df )
 
 p1 = figure()
+p1.title = sys.argv[1]
 p1.circle(x=xc, y=yc, color='red', fill_color=None, alpha=0.9, radius=R, legend_label='fit', radius_units='data')
 p1.circle(x='z', y='x', color='blue', source=source, size=1, legend_label='full data')
 p1.triangle(x='zfilt', y='xfilt', color='green', source=source, legend_label='fitted data')
@@ -59,12 +62,16 @@ Rstring = Label(x=xc-200, y=yc,
                  text_color='red')
 
 mom = 0.2997924580 * R/100. * 3.529 * 350. # divide radius for meters
-MomentumStr = Label(x=xc-350, y=yc-100,
-                    text='Momentum estimate: '+str(round(mom,2))+' GeV',
-                 text_color='black')
+MomEstStr = Label(x=xc-350, y=yc-70,
+                  text='Momentum estimate: '+ str(round(mom,2))+' GeV',
+                  text_color='black')
+MomTruthStr = Label(x=xc-350, y=yc-140,
+                    text='Momentum truth: '+ str(round(np.sqrt(MOMTRUTH*MOMTRUTH+PROTONMASS*PROTONMASS),2))+' GeV',
+                    text_color='black')
 
 p1.add_layout(Rstring)
-p1.add_layout(MomentumStr)
+p1.add_layout(MomEstStr)
+p1.add_layout(MomTruthStr)
 
 #plot circle center and radius
 p1.xaxis.axis_label = 'Z [cm]'
