@@ -8,14 +8,14 @@ SimParticle::XYZ SimParticle::calc_lorentz_force(double charge, const XYZ& vel, 
   return charge*vel.Cross(b); // (A*s)*(cm/s)*(kg/(A*s*s)) = (cm*kg)/(s*s)
 }
 
-const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode ) {
+const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode, double scale ) {
   const Track* t = nullptr;
   using m = tracking::TrackMode;
   
   if(mode == m::Euler) {
       
     if(mTrackCheck[m::Euler] == false) {
-      mTracks[m::Euler] = track_euler(magnets);
+      mTracks[m::Euler] = track_euler(magnets, scale);
       mTrackCheck[m::Euler] = true;
     }
     t = &( mTracks[m::Euler] );
@@ -24,7 +24,7 @@ const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode
   else if(mode == m::RungeKutta4) {
       
     if(mTrackCheck[m::RungeKutta4] == false) {
-  	mTracks[m::RungeKutta4] = track_rungekutta4(magnets);
+      mTracks[m::RungeKutta4] = track_rungekutta4(magnets, scale);
   	mTrackCheck[m::RungeKutta4] = true;
     }
     t = &( mTracks[m::RungeKutta4] );
@@ -36,7 +36,7 @@ const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode
   return *t;
 }
 
-Track SimParticle::track_euler(const Magnets& magnets)
+Track SimParticle::track_euler(const Magnets& magnets, double scale)
 { 
   double charge = mParticle.charge * mEcharge; // C = A*s
 
@@ -70,7 +70,7 @@ Track SimParticle::track_euler(const Magnets& magnets)
       // center of begin and stop vector without magnetic field
       XYZ partPosMid = (partPos + partPosNext) * 0.5;     
 
-      XYZ Bfield = magnets.field(partPosMid, 350);
+      XYZ Bfield = magnets.field(partPosMid, scale);
 
       if(Bfield.Mag2() == 0.0)
 	  partPos = partPosNext;
@@ -108,7 +108,7 @@ Track SimParticle::track_euler(const Magnets& magnets)
   return Track(nStepsUsed, energies, positions, momenta);
 }
 
-Track SimParticle::track_rungekutta4(const Magnets& magnets)
+Track SimParticle::track_rungekutta4(const Magnets& magnets, double scale)
 {
   double charge = mParticle.charge * mEcharge; // C = A*s
 
@@ -142,7 +142,7 @@ Track SimParticle::track_rungekutta4(const Magnets& magnets)
       // center of begin and stop vector without magnetic field
       XYZ partPosMid = (partPos + partPosNext) * 0.5;
 
-      XYZ Bfield = magnets.field(partPosMid, 350);
+      XYZ Bfield = magnets.field(partPosMid, scale);
 
       if(Bfield.Mag2() == 0.0)
 	  partPos = partPosNext;
@@ -191,11 +191,6 @@ Track SimParticle::track_rungekutta4(const Magnets& magnets)
 	  // std::cerr << "Mom after: " << partMomNext.X() << ", " << partMomNext.Y() << ", " << partMomNext.Z() << std::endl;
 	  // std::cerr << "Bfield: " << Bfield.X() << ", " << Bfield.Y() << ", " << Bfield.Z() << std::endl;
 
-	  //normalization of momentum?
-	  // double mag0 = TMath::Sqrt(partMom.Mag2());
-	  // double mag1 = TMath::Sqrt(partMomNext.Mag2());
-	  // partMomNext *= mag0 / mag1; // make sure that total momentum doesn't change
-
 	  // v = dx/dt = p * c / (gamma * m) (runge-kutta k1 term)
 	  XYZ partPosNext = partPos + ( mStepSize * 0.16666666 * (partVel + 2*vel2 + 2*vel3 + vel4) / TMath::Sqrt(partVel.Mag2()) );
 	  partPos = partPosNext;
@@ -203,7 +198,8 @@ Track SimParticle::track_rungekutta4(const Magnets& magnets)
 	  // momentum normalization
 	  double mag2 = TMath::Sqrt(partMom.Mag2());
 	  double mag3 = TMath::Sqrt(partMomNext.Mag2());
-	  partMom = partMomNext * mag2/mag3;
+	  partMomNext *= mag2/mag3;
+	  partMom = partMomNext;
 	  
 	  Ltz ltz_for_next_vel( partMom.X(), partMom.Y(), partMom.Z(), mParticle.mass );
 	  partVel = calc_relativistic_velocity(partMom, ltz_for_next_vel.Gamma(), mParticle.mass);

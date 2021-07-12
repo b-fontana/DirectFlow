@@ -72,7 +72,7 @@ class SimParticle {
     mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES, false),
     mNsteps(pNsteps), mStepSize(pStepSize) {};
 
-  const Track& track(const Magnets&, tracking::TrackMode);
+  const Track& track(const Magnets&, tracking::TrackMode, double);
     
  private:
   Particle mParticle;
@@ -82,12 +82,12 @@ class SimParticle {
   static constexpr double mSpeedOfLight = 29979245800.0; // (cm/s)
   static constexpr double mEcharge = 1.602176565E-19; // C = A*s
   unsigned mNsteps = 3000;
-  float mStepSize = .1f;
+  double mStepSize = 1.;
 
   XYZ calc_relativistic_velocity(const XYZ&, double, double) const;
   XYZ calc_lorentz_force(double, const XYZ&, const XYZ&) const;
-  Track track_euler( const Magnets& );
-  Track track_rungekutta4( const Magnets& );
+  Track track_euler( const Magnets&, double );
+  Track track_rungekutta4( const Magnets&, double );
 };
 
 #endif // TRACKING_H

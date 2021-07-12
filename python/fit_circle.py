@@ -12,8 +12,8 @@ output_file( os.path.basename(__file__)[:-2] + 'html' )
 DEBUG = True
 MOMTRUTH = 1500
 PROTONMASS = 0.938
-XMIN, XMAX = 1500, 3000
-YMIN, YMAX = 1000, 2500
+XMIN, XMAX = 1500, 2700
+YMIN, YMAX = 1000, 2200
 assert(XMAX-XMIN == YMAX-YMIN)
 CENTER_EST = 2100, 1600
 
@@ -51,11 +51,11 @@ source = CDS( df )
 p1 = figure()
 p1.title = sys.argv[1]
 p1.circle(x=xc, y=yc, color='red', fill_color=None, alpha=0.9, radius=R, legend_label='fit', radius_units='data')
-p1.circle(x='z', y='x', color='blue', source=source, size=1, legend_label='full data')
-p1.triangle(x='zfilt', y='xfilt', color='green', source=source, legend_label='fitted data')
+#p1.circle(x='z', y='x', color='blue', source=source, size=1, legend_label='full data')
+p1.circle(x='zfilt', y='xfilt', color='green', source=source, size=1, legend_label='fitted data')
 
 p2 = figure()
-p2.circle(x='index', y='energy', legend_label='energies', source=source)
+p2.circle(x='index', y='energy', legend_label='energies', size=2, source=source)
 
 Rstring = Label(x=xc-200, y=yc,
                  text='Radius: '+str(round(R,2))+' cm',
