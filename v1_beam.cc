@@ -23,7 +23,7 @@ void run(tracking::TrackMode mode)
   //define the initial properties of the incident particle
   Particle particle;
   particle.pos = ROOT::Math::XYZVector(0.0, 0.0, -7000.0); // cm
-  particle.mom = ROOT::Math::XYZVector(0.0, 0.0, 3000.0); // GeV/c
+  particle.mom = ROOT::Math::XYZVector(0.0, 0.0, 3500.0); // GeV/c
   particle.mass = 0.938; // GeV/c^2
   particle.energy = TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
   particle.charge = +1;
@@ -54,7 +54,7 @@ void run(tracking::TrackMode mode)
   // std::vector<Magnets::Magnet> magnetInfo{ {Magnets::DipoleY,
   // 					    "D1_neg",
   // 					    kGreen,
-  // 					    std::make_pair(0.,-3.529),
+  // 					    std::make_pair(0.,-0.5),
   // 					    std::make_pair(particle.pos.Z()-1500, particle.pos.Z()+3000), 600., 600.},
   // };
 
@@ -70,7 +70,7 @@ void run(tracking::TrackMode mode)
   // Double_t sigma_x_LHC[37] = {0.0013124,0.0014062,0.0014562,0.0013687,0.0012687,0.0010499,0.0008562,0.0007999,0.0007562,0.0007812,0.0007624,0.0007437,0.0006249,0.0005249,0.0004062,0.0002812,0.0001437,4.37485e-05,0.0001312,0.0002687,0.0004374,0.0005624,0.0006562,0.0007187,0.0009124,0.0010812,0.0013124,0.0014312,0.0015624,0.0014874,0.0014249,0.0012374,0.0011374,0.0010187,0.0010062,0.0009812,0.0009687};
   //-------------------------------------------------------------------------------------------
 
-  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 30000, 30000 }};
+  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 18000, 18000 }};
   std::array<double, tracking::TrackMode::NMODES> stepsize = {{ 1., 1. }};
   std::array<std::string, tracking::TrackMode::NMODES> suf = {{ "_euler", "_rk4" }};
 
@@ -159,4 +159,3 @@ int main(int argc, char **argv) {
   
   return 0;
 }
-

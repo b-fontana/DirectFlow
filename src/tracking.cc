@@ -101,8 +101,9 @@ Track SimParticle::track_euler(const Magnets& magnets, double scale)
       energies.push_back( TMath::Sqrt(partMom.Mag2() + 0.938*0.938) );
       
       ++nStepsUsed;
-      
-      if(fabs(partPos.Z()) > 9000.0) break;
+
+      if(fabs(partPos.X()) > 1500 or fabs(partPos.Y()) > 1500.0
+	 or fabs(partPos.Z()) > 9000 ) break;
     }
 
   return Track(nStepsUsed, energies, positions, momenta);
