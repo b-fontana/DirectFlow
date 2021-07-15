@@ -10,14 +10,15 @@ void Magnets::draw() {
       magnets[im] = new TEveBox;
       magnets[im]->SetName( mMagnetsInfo[im].label.c_str() );
 
-      magnets[im]->SetVertex(0, -mMagnetsInfo[im].x, -mMagnetsInfo[im].y, mMagnetsInfo[im].z.first);
-      magnets[im]->SetVertex(1,  mMagnetsInfo[im].x, -mMagnetsInfo[im].y, mMagnetsInfo[im].z.first);
-      magnets[im]->SetVertex(2,  mMagnetsInfo[im].x,  mMagnetsInfo[im].y, mMagnetsInfo[im].z.first);
-      magnets[im]->SetVertex(3, -mMagnetsInfo[im].x,  mMagnetsInfo[im].y, mMagnetsInfo[im].z.first);
-      magnets[im]->SetVertex(4, -mMagnetsInfo[im].x, -mMagnetsInfo[im].y, mMagnetsInfo[im].z.second);
-      magnets[im]->SetVertex(5,  mMagnetsInfo[im].x, -mMagnetsInfo[im].y, mMagnetsInfo[im].z.second);
-      magnets[im]->SetVertex(6,  mMagnetsInfo[im].x,  mMagnetsInfo[im].y, mMagnetsInfo[im].z.second);
-      magnets[im]->SetVertex(7, -mMagnetsInfo[im].x,  mMagnetsInfo[im].y, mMagnetsInfo[im].z.second);
+      Geometry::Dimensions d = mMagnetsInfo[im].dims;
+      magnets[im]->SetVertex(0, d.X().first,  d.Y().first,  d.Z().first);
+      magnets[im]->SetVertex(1, d.X().second, d.Y().first,  d.Z().first);
+      magnets[im]->SetVertex(2, d.X().second, d.Y().second, d.Z().first);
+      magnets[im]->SetVertex(3, d.X().first,  d.Y().second, d.Z().first);
+      magnets[im]->SetVertex(4, d.X().first,  d.Y().first,  d.Z().second);
+      magnets[im]->SetVertex(5, d.X().second, d.Y().first,  d.Z().second);
+      magnets[im]->SetVertex(6, d.X().second, d.Y().second, d.Z().second);
+      magnets[im]->SetVertex(7, d.X().first,  d.Y().second, d.Z().second);
 
       magnets[im]->SetMainColor(mMagnetsInfo[im].color);
       magnets[im]->SetMainTransparency(75); // the higher the value the more transparent
@@ -36,7 +37,7 @@ Magnets::XYZ Magnets::field(XYZ pos, double scale=1.0) const {
     {
       if(info.type == Type::DipoleX)
 	{
-	  if(pos.Z() < info.z.second and pos.Z() > info.z.first) {
+	  if(pos.Z() < info.dims.Z().second and pos.Z() > info.dims.Z().first) {
 	    if(info.intensity.second != 0)
 	      std::cout << "Are you sure this is a dipole along x?"<< std::endl;
 	    double fieldIntensity = info.intensity.first*fieldDir*scale;
@@ -46,7 +47,7 @@ Magnets::XYZ Magnets::field(XYZ pos, double scale=1.0) const {
 	
       else if(info.type == Type::DipoleY)
 	{
-	  if(pos.Z() < info.z.second and pos.Z() > info.z.first) {
+	  if(pos.Z() < info.dims.Z().second and pos.Z() > info.dims.Z().first) {
 	    if(info.intensity.first != 0)
 	      std::cout << "Are you sure this is a dipole along y?"<< std::endl;
 	    double fieldIntensity = info.intensity.second*fieldDir*scale;
@@ -57,7 +58,7 @@ Magnets::XYZ Magnets::field(XYZ pos, double scale=1.0) const {
 
       else if(info.type == Type::Quadrupole)
 	{
-	  if(pos.Z() < info.z.second and pos.Z() > info.z.first) {
+	  if(pos.Z() < info.dims.Z().first and pos.Z() > info.dims.Z().second) {
 	    if(info.intensity.second == 0 or info.intensity.first == 0)
 	      std::cout << "Are you sure this is a quadrupole?"<< std::endl;
 
@@ -73,4 +74,32 @@ Magnets::XYZ Magnets::field(XYZ pos, double scale=1.0) const {
 	}
     }
   return Bfield;
+}
+
+void Calorimeters::draw() const {
+
+  std::vector<TEveBox*> calos( mCalosInfo.size() );
+
+    
+  for(unsigned im=0; im<mCalosInfo.size(); im++)
+    {
+      calos[im] = new TEveBox;
+      calos[im]->SetName( mCalosInfo[im].label.c_str() );
+
+      Geometry::Dimensions d = mCalosInfo[im].dims;
+      calos[im]->SetVertex(0, d.X().first,  d.Y().first,  d.Z().first);
+      calos[im]->SetVertex(1, d.X().second, d.Y().first,  d.Z().first);
+      calos[im]->SetVertex(2, d.X().second, d.Y().second, d.Z().first);
+      calos[im]->SetVertex(3, d.X().first,  d.Y().second, d.Z().first);
+      calos[im]->SetVertex(4, d.X().first,  d.Y().first,  d.Z().second);
+      calos[im]->SetVertex(5, d.X().second, d.Y().first,  d.Z().second);
+      calos[im]->SetVertex(6, d.X().second, d.Y().second, d.Z().second);
+      calos[im]->SetVertex(7, d.X().first,  d.Y().second, d.Z().second);
+
+      calos[im]->SetMainColor(mCalosInfo[im].color);
+      calos[im]->SetMainTransparency(75); // the higher the value the more transparent
+	
+      gEve->AddElement(calos[im]);
+    }
+
 }

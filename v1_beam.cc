@@ -29,18 +29,53 @@ void run(tracking::TrackMode mode)
   particle.charge = +1;
   
   std::vector<Magnets::Magnet> magnetInfo{
-     {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),  std::make_pair(-5840.0-945.0, -5840.0), 100., 100.},
-     {Magnets::Quadrupole, "Q4_neg", kYellow,  std::make_pair(200.34,-200.34), std::make_pair(-4730.0-630.0, -4730.0), 100., 100.},
-     {Magnets::Quadrupole, "Q3_neg", kYellow,  std::make_pair(-200.34,200.34), std::make_pair(-3830.0-550.0, -3830.0), 100., 100.},
-     {Magnets::Quadrupole, "Q2_neg", kYellow,  std::make_pair(-200.34,200.34), std::make_pair(-3180.0-550.0, -3180.0), 100., 100.},
-     {Magnets::Quadrupole, "Q1_neg", kYellow,  std::make_pair(200.34,-200.34), std::make_pair(-2300.0-630.0, -2300.0), 100., 100.},
-     {Magnets::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.), std::make_pair(-1920.0-190.0, -1920.0), 100., 100.},
-     {Magnets::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),    std::make_pair(-750.0-430.0,  -750.0),  100., 100.},
-     {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34), std::make_pair(2300.0, 2300.0+630.0),   100., 100.},
-     {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34), std::make_pair(3180.0, 3180.0+550.0),   100., 100.},
-     {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34), std::make_pair(3830.0, 3830.0+550.0),   100., 100.},
-     {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34), std::make_pair(4730.0, 4730.0+630.0),   100., 100.},
-     {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529), std::make_pair(5840.0, 5840.0+945.0),   100., 100.}
+     {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
+      Geometry::Dimensions{-100., 100., -100., 100., -5840.0-945.0, -5840.0}
+     },
+     
+     {Magnets::Quadrupole, "Q4_neg", kYellow,  std::make_pair(200.34,-200.34),
+      Geometry::Dimensions{-100., 100., -100., 100., -4730.0-630.0, -4730.0}
+     },
+     
+     {Magnets::Quadrupole, "Q3_neg", kYellow,  std::make_pair(-200.34,200.34),
+      Geometry::Dimensions{-100., 100., -100., 100., -3830.0-550.0, -3830.0}
+     },
+     
+     {Magnets::Quadrupole, "Q2_neg", kYellow,  std::make_pair(-200.34,200.34),
+      Geometry::Dimensions{-100., 100., -100., 100., -3180.0-550.0, -3180.0}
+     },
+     
+     {Magnets::Quadrupole, "Q1_neg", kYellow,  std::make_pair(200.34,-200.34),
+      Geometry::Dimensions{-100., 100., -100., 100., -2300.0-630.0, -2300.0}
+     },
+      
+     {Magnets::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.),
+      Geometry::Dimensions{-100., 100., -100., 100., -1920.0-190.0, -1920.0}
+     },
+      
+     {Magnets::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),
+      Geometry::Dimensions{-100., 100., -100., 100., -750.0-430.0,  -750.0}
+     },
+      
+     {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
+      Geometry::Dimensions{-100., 100., -100., 100., 2300.0, 2300.0+630.0}
+     },
+      
+     {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34),
+      Geometry::Dimensions{-100., 100., -100., 100., 3180.0, 3180.0+550.0}
+     },
+      
+     {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34),
+      Geometry::Dimensions{-100., 100., -100., 100., 3830.0, 3830.0+550.0}
+     },
+      
+     {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34),
+      Geometry::Dimensions{-100., 100., -100., 100., 4730.0, 4730.0+630.0}
+     },
+      
+     {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529),
+      Geometry::Dimensions{-100., 100., -100., 100., 5840.0, 5840.0+945.0}
+     }
   };
 
   // std::vector<Magnets::Magnet> magnetInfo{ {Magnets::DipoleY,
@@ -60,6 +95,13 @@ void run(tracking::TrackMode mode)
 
   Magnets magnets(magnetInfo);
   magnets.draw();
+
+  std::vector<Calorimeters::Calorimeter> caloInfo{
+	  {Calorimeters::Neutron, "ZDC_neutron", kCyan-3, Geometry::Dimensions{-100., 100., -100., 100., -400., 400.}}
+  };
+  Calorimeters calos(caloInfo);
+  calos.draw();
+
   std::vector<TEveLine*> particleTrackViz;
   particleTrackViz.resize(1);
   particleTrackViz[0] = new TEveLine();

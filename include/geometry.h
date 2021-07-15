@@ -15,6 +15,31 @@
 
 class Geometry {
 public:
+  class Dimensions {
+  public:
+    using pair = std::pair<double, double>;
+    ROOT::Math::XYZVector beg;
+    ROOT::Math::XYZVector end;
+
+    Dimensions(double x1, double x2,
+	       double y1, double y2,
+	       double z1, double z2) {
+      beg.SetXYZ(x1, y1, z1);
+      end.SetXYZ(x2, y2, z2);
+      
+      mX = std::make_pair( beg.X(), end.X() );
+      mY = std::make_pair( beg.Y(), end.Y() );
+      mZ = std::make_pair( beg.Z(), end.Z() );
+    }
+      
+    const pair X() const { return mX; }
+    const pair Y() const { return mY; }
+    const pair Z() const { return mZ; }
+
+  private:
+    pair mX, mY, mZ;
+  };
+
   Geometry() {
     TEveManager::Create();
     this->draw_beam_axis();
@@ -49,9 +74,7 @@ public:
     std::string label; // name to be shown in the event display
     int color;
     std::pair<double,double> intensity; //B field intensity along x and y (with sign) [T]
-    std::pair<double,double> z; //start and stop in z [cm]
-    double x; // x size [cm]
-    double y; // y size [cm]
+    Geometry::Dimensions dims; //beginning and end coordinates (x, y and z) [cm]
   };
     
   Magnets(const std::vector<Magnet>& pMagnetsInfo)
@@ -66,6 +89,27 @@ private:
   const float get_sign_direction(double z) const {
     return z<0 ? -1.f : 1.f;
   }
+};
+
+
+class Calorimeters: public Geometry {
+public:
+  enum Type { Neutron, Proton, NTYPES };
+
+  struct Calorimeter {
+    Calorimeters::Type type; // one of the possibilities in the enum above
+    std::string label; // name to be shown in the event display
+    int color;
+    Geometry::Dimensions dims; //beginning and end coordinates (x, y and z) [cm]
+  };
+    
+  Calorimeters(const std::vector<Calorimeter>& pCalosInfo)
+    : Geometry(), mCalosInfo(pCalosInfo) {};
+  
+  void draw() const;
+
+private:
+  std::vector<Calorimeter> mCalosInfo;
 };
 
 #endif //GEOMETRY_H
