@@ -43,6 +43,7 @@ public:
   Geometry() {
     TEveManager::Create();
     this->draw_beam_axis();
+    this->draw_beams();
   };
 
   //virtual void draw();
@@ -52,15 +53,37 @@ private:
 
     TEveLine* TEveLine_beam_axis = NULL;
     TEveLine_beam_axis = new TEveLine();
-    TEveLine_beam_axis ->SetNextPoint(0.0,0.0,-7650.0);
-    TEveLine_beam_axis ->SetNextPoint(0.0,0.0,7650.0);
+    TEveLine_beam_axis ->SetNextPoint(0.0,0.0,-6300-5840.);
+    TEveLine_beam_axis ->SetNextPoint(0.0,0.0,1000);
     TEveLine_beam_axis ->SetName("beam axis");
-    TEveLine_beam_axis ->SetLineStyle(1);
-    TEveLine_beam_axis ->SetLineWidth(4);
+    TEveLine_beam_axis ->SetLineStyle(9);
+    TEveLine_beam_axis ->SetLineWidth(1);
     TEveLine_beam_axis ->SetMainAlpha(0.7);
     TEveLine_beam_axis ->SetMainColor(kBlue);
     gEve->AddElement(TEveLine_beam_axis);
     
+  }
+
+  void draw_beams() {
+
+    const unsigned nbeams = 2;
+    std::array<std::string,nbeams> names_ = { {"incoming beam",
+					       "outgoing beam"} };
+    std::array<Dimensions,nbeams> coords_{{ Dimensions{9.3,  0., 0., 0., -6300-5840., 0.},
+					    Dimensions{-9.3, 0., 0., 0., -6300-5840., 0.} }};
+    std::array<unsigned,nbeams> colors_ = {{kGreen-9,kGreen-1}};
+    for(unsigned i=0; i<2; ++i) {
+      TEveLine* TEveLine_beam_axis = NULL;
+      TEveLine_beam_axis = new TEveLine();
+      TEveLine_beam_axis ->SetNextPoint( coords_[i].X().first,  coords_[i].Y().first,  coords_[i].Z().first  );
+      TEveLine_beam_axis ->SetNextPoint( coords_[i].X().second, coords_[i].Y().second, coords_[i].Z().second );
+      TEveLine_beam_axis ->SetName( names_[i].c_str() );
+      TEveLine_beam_axis ->SetLineStyle(1);
+      TEveLine_beam_axis ->SetLineWidth(1);
+      TEveLine_beam_axis ->SetMainAlpha(0.8);
+      TEveLine_beam_axis ->SetMainColor( colors_[i] );
+      gEve->AddElement(TEveLine_beam_axis);
+    }
   }
 };
 

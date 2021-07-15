@@ -30,74 +30,69 @@ void run(tracking::TrackMode mode)
   
   std::vector<Magnets::Magnet> magnetInfo{
      {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
-      Geometry::Dimensions{-100., 100., -100., 100., -5840.0-945.0, -5840.0}
+      Geometry::Dimensions{-10., 10., -10., 10., -5840.0-945.0, -5840.0}
      },
      
      {Magnets::Quadrupole, "Q4_neg", kYellow,  std::make_pair(200.34,-200.34),
-      Geometry::Dimensions{-100., 100., -100., 100., -4730.0-630.0, -4730.0}
+      Geometry::Dimensions{-10., 10., -10., 10., -4730.0-630.0, -4730.0}
      },
      
      {Magnets::Quadrupole, "Q3_neg", kYellow,  std::make_pair(-200.34,200.34),
-      Geometry::Dimensions{-100., 100., -100., 100., -3830.0-550.0, -3830.0}
+      Geometry::Dimensions{-10., 10., -10., 10., -3830.0-550.0, -3830.0}
      },
      
      {Magnets::Quadrupole, "Q2_neg", kYellow,  std::make_pair(-200.34,200.34),
-      Geometry::Dimensions{-100., 100., -100., 100., -3180.0-550.0, -3180.0}
+      Geometry::Dimensions{-10., 10., -10., 10., -3180.0-550.0, -3180.0}
      },
      
      {Magnets::Quadrupole, "Q1_neg", kYellow,  std::make_pair(200.34,-200.34),
-      Geometry::Dimensions{-100., 100., -100., 100., -2300.0-630.0, -2300.0}
+      Geometry::Dimensions{-10., 10., -10., 10., -2300.0-630.0, -2300.0}
      },
       
      {Magnets::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.),
-      Geometry::Dimensions{-100., 100., -100., 100., -1920.0-190.0, -1920.0}
+      Geometry::Dimensions{-10., 10., -10., 10., -1920.0-190.0, -1920.0}
      },
       
      {Magnets::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),
-      Geometry::Dimensions{-100., 100., -100., 100., -750.0-430.0,  -750.0}
+      Geometry::Dimensions{-10., 10., -10., 10., -750.0-430.0,  -750.0}
      },
       
-     {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
-      Geometry::Dimensions{-100., 100., -100., 100., 2300.0, 2300.0+630.0}
-     },
+     // {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
+     //  Geometry::Dimensions{-10., 10., -10., 10., 2300.0, 2300.0+630.0}
+     // },
       
-     {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34),
-      Geometry::Dimensions{-100., 100., -100., 100., 3180.0, 3180.0+550.0}
-     },
+     // {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34),
+     //  Geometry::Dimensions{-10., 10., -10., 10., 3180.0, 3180.0+550.0}
+     // },
       
-     {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34),
-      Geometry::Dimensions{-100., 100., -100., 100., 3830.0, 3830.0+550.0}
-     },
+     // {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34),
+     //  Geometry::Dimensions{-10., 10., -10., 10., 3830.0, 3830.0+550.0}
+     // },
       
-     {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34),
-      Geometry::Dimensions{-100., 100., -100., 100., 4730.0, 4730.0+630.0}
-     },
+     // {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34),
+     //  Geometry::Dimensions{-10., 10., -10., 10., 4730.0, 4730.0+630.0}
+     // },
       
-     {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529),
-      Geometry::Dimensions{-100., 100., -100., 100., 5840.0, 5840.0+945.0}
-     }
+     // {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529),
+     //  Geometry::Dimensions{-10., 10., -10., 10., 5840.0, 5840.0+945.0}
+     // }
   };
 
   // std::vector<Magnets::Magnet> magnetInfo{ {Magnets::DipoleY,
   // 					    "D1_neg",
   // 					    kGreen,
-  // 					    std::make_pair(0.,-3.529),
-  // 					    std::make_pair(-5840.0-945.0, -5840.0),
-  // 					    100., 100.},
-  // };
-
-  // std::vector<Magnets::Magnet> magnetInfo{ {Magnets::DipoleY,
-  // 					    "D1_neg",
-  // 					    kGreen,
   // 					    std::make_pair(0.,-0.5),
-  // 					    std::make_pair(particle.pos.Z()-1500, particle.pos.Z()+3000), 600., 600.},
+  // 					    std::make_pair(particle.pos.Z()-1500, particle.pos.Z()+3000), 60., 60.},
   // };
 
   Magnets magnets(magnetInfo);
   magnets.draw();
 
+  //figure 3.3 in ALICE ZDC TDR (which does not agree perfectly with the text: see dimensions in Chapters 3.4 and 3.5)
+  //available on July 15th 2021 here: https://cds.cern.ch/record/381433/files/Alice-TDR.pdf
   std::vector<Calorimeters::Calorimeter> caloInfo{
-	  {Calorimeters::Neutron, "ZDC_neutron", kCyan-3, Geometry::Dimensions{-100., 100., -100., 100., -400., 400.}}
+      {Calorimeters::Neutron, "NeutronZDC", kCyan-3, Geometry::Dimensions{-8/2., 8./2., -8/2., 8/2., -11613, -11613+100}},
+      {Calorimeters::Proton,  "ProtonZDC",  kCyan+3, Geometry::Dimensions{10.82, 10.82+22., -13./2., 13./2., -11563, -11563+150}}
   };
   Calorimeters calos(caloInfo);
   calos.draw();
@@ -112,7 +107,7 @@ void run(tracking::TrackMode mode)
   // Double_t sigma_x_LHC[37] = {0.0013124,0.0014062,0.0014562,0.0013687,0.0012687,0.0010499,0.0008562,0.0007999,0.0007562,0.0007812,0.0007624,0.0007437,0.0006249,0.0005249,0.0004062,0.0002812,0.0001437,4.37485e-05,0.0001312,0.0002687,0.0004374,0.0005624,0.0006562,0.0007187,0.0009124,0.0010812,0.0013124,0.0014312,0.0015624,0.0014874,0.0014249,0.0012374,0.0011374,0.0010187,0.0010062,0.0009812,0.0009687};
   //-------------------------------------------------------------------------------------------
 
-  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 18000, 18000 }};
+  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 13000, 13000 }};
   std::array<double, tracking::TrackMode::NMODES> stepsize = {{ 1., 1. }};
   std::array<std::string, tracking::TrackMode::NMODES> suf = {{ "_euler", "_rk4" }};
 
