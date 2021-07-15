@@ -60,8 +60,11 @@ Magnets::XYZ Magnets::field(XYZ pos, double scale=1.0) const {
 	  if(pos.Z() < info.z.second and pos.Z() > info.z.first) {
 	    if(info.intensity.second == 0 or info.intensity.first == 0)
 	      std::cout << "Are you sure this is a quadrupole?"<< std::endl;
-	    double fieldIntensityX = info.intensity.first*fieldDir*scale*pos.Y();
-	    double fieldIntensityY = info.intensity.first*fieldDir*scale*pos.X();
+
+	    // dividing by 100 to convert from centimeters to meters (assuming coordinates were given in cm)
+	    double fieldIntensityX = info.intensity.first*fieldDir*scale*pos.Y() / 100.;
+	    double fieldIntensityY = info.intensity.second*fieldDir*scale*pos.X() / 100.;
+	    
 	    const float sign = get_sign_direction(pos.Z());
 	    fieldIntensityX *= sign;
 	    fieldIntensityY *= sign;

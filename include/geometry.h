@@ -14,13 +14,15 @@
 //#include "./functions.h"
 
 class Geometry {
- public:
+public:
   Geometry() {
     TEveManager::Create();
     this->draw_beam_axis();
   };
 
- private:
+  //virtual void draw();
+  
+private:
   void draw_beam_axis() {
 
     TEveLine* TEveLine_beam_axis = NULL;
@@ -43,13 +45,13 @@ public:
   enum Type { DipoleX, DipoleY, Quadrupole, NTYPES };
 
   struct Magnet {
-    Magnets::Type type;
-    std::string label;
+    Magnets::Type type; // one of the possibilities in the enum above
+    std::string label; // name to be shown in the event display
     int color;
-    std::pair<double,double> intensity; //x and y intensity (including sign)
-    std::pair<double,double> z; //start and stop in z
-    double x;
-    double y;
+    std::pair<double,double> intensity; //B field intensity along x and y (with sign) [T]
+    std::pair<double,double> z; //start and stop in z [cm]
+    double x; // x size [cm]
+    double y; // y size [cm]
   };
     
   Magnets(const std::vector<Magnet>& pMagnetsInfo)
@@ -59,7 +61,6 @@ public:
   XYZ field(XYZ, double) const;
 
 private:
-  static constexpr std::pair<double,double> magnetSize = std::make_pair(100.0,100.0);
   std::vector<Magnet> mMagnetsInfo;
 
   const float get_sign_direction(double z) const {
