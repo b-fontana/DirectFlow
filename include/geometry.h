@@ -43,7 +43,7 @@ public:
   Geometry() {
     TEveManager::Create();
     this->draw_beam_axis();
-    this->draw_beams();
+    //this->draw_beams();
   };
 
   //virtual void draw();

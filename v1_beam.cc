@@ -23,7 +23,7 @@ void run(tracking::TrackMode mode)
   //define the initial properties of the incident particle
   Particle particle;
   particle.pos = ROOT::Math::XYZVector(0.0, 0.0, -7000.0); // cm
-  particle.mom = ROOT::Math::XYZVector(0.0, 0.0, 2760.0); // GeV/c
+  particle.mom = ROOT::Math::XYZVector(0.0, 0.0, 2760.0/2.); // GeV/c
   particle.mass = 0.938; // GeV/c^2
   particle.energy = TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
   particle.charge = +1;
@@ -90,12 +90,13 @@ void run(tracking::TrackMode mode)
 
   //figure 3.3 in ALICE ZDC TDR (which does not agree perfectly with the text: see dimensions in Chapters 3.4 and 3.5)
   //available on July 15th 2021 here: https://cds.cern.ch/record/381433/files/Alice-TDR.pdf
-  std::vector<Calorimeters::Calorimeter> caloInfo{
-      {Calorimeters::Neutron, "NeutronZDC", kCyan-3, Geometry::Dimensions{-8/2., 8./2., -8/2., 8/2., -11613, -11613+100}},
-      {Calorimeters::Proton,  "ProtonZDC",  kCyan+3, Geometry::Dimensions{10.82, 10.82+22., -13./2., 13./2., -11563, -11563+150}}
-  };
-  Calorimeters calos(caloInfo);
-  calos.draw();
+
+  // std::vector<Calorimeters::Calorimeter> caloInfo{
+  //     {Calorimeters::Neutron, "NeutronZDC", kCyan-3, Geometry::Dimensions{-8/2., 8./2., -8/2., 8/2., -11613, -11613+100}},
+  //     {Calorimeters::Proton,  "ProtonZDC",  kCyan+3, Geometry::Dimensions{10.82, 10.82+22., -13./2., 13./2., -11563, -11563+150}}
+  // };
+  // Calorimeters calos(caloInfo);
+  // calos.draw();
 
   std::vector<TEveLine*> particleTrackViz;
   particleTrackViz.resize(1);
