@@ -24,7 +24,7 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   constexpr unsigned nparticles = 2;
   Particle p1, p2;
   p1.pos = ROOT::Math::XYZVector(xinit, yinit,  -7000.0); // cm
-  p2.pos = ROOT::Math::XYZVector(-xinit, -yinit, 7000.0); // cm
+  p2.pos = ROOT::Math::XYZVector(xinit, yinit, 7000.0); // cm
   p1.mom = ROOT::Math::XYZVector(0.0, 0.0,  einit); // GeV/c
   p2.mom = ROOT::Math::XYZVector(0.0, 0.0, -einit); // GeV/c
   p1.mass = 0.938; // GeV/c^2
@@ -55,13 +55,13 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
       Geometry::Dimensions{-10., 10., -10., 10., -2300.0-630.0, -2300.0}
      },
       
-     {Magnets::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.),
-      Geometry::Dimensions{-10., 10., -10., 10., -1920.0-190.0, -1920.0}
-     },
+     // {Magnets::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.),
+     //  Geometry::Dimensions{-10., 10., -10., 10., -1920.0-190.0, -1920.0}
+     // },
       
-     {Magnets::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),
-      Geometry::Dimensions{-10., 10., -10., 10., -750.0-430.0,  -750.0}
-     },
+     // {Magnets::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),
+     //  Geometry::Dimensions{-10., 10., -10., 10., -750.0-430.0,  -750.0}
+     // },
       
      {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
       Geometry::Dimensions{-10., 10., -10., 10., 2300.0, 2300.0+630.0}
