@@ -1,13 +1,13 @@
 ---
 layout: post
-title:  "Trajectories: x=20cm, y=20cm"
+title:  "Trajectories: x=-0.01cm, y=-0.01cm"
 date:   2021-07-20 10:00:18 +0200
 categories: plots
 ---
 
 {% include traj_libs.html %}
 
-{% include traj_20_20_1380.html %}
+{% include traj_-0p01_-0p01_1380.html %}
 
 -----------
 
