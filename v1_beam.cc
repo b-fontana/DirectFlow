@@ -21,13 +21,18 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   gStyle->SetPalette(56); // 53 = black body radiation, 56 = inverted black body radiator, 103 = sunset, 87 == light temperature
  
   //define the initial properties of the incident particle
-  Particle particle;
-  // particle.pos = ROOT::Math::XYZVector(0.0, 0.0, -7000.0); // cm
-  particle.pos = ROOT::Math::XYZVector(xinit, yinit, -7000.0); // cm
-  particle.mom = ROOT::Math::XYZVector(0.0, 0.0, einit); // GeV/c
-  particle.mass = 0.938; // GeV/c^2
-  particle.energy = TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
-  particle.charge = +1;
+  constexpr unsigned nparticles = 2;
+  Particle p1, p2;
+  p1.pos = ROOT::Math::XYZVector(xinit, yinit,  -7000.0); // cm
+  p2.pos = ROOT::Math::XYZVector(-xinit, -yinit, 7000.0); // cm
+  p1.mom = ROOT::Math::XYZVector(0.0, 0.0,  einit); // GeV/c
+  p2.mom = ROOT::Math::XYZVector(0.0, 0.0, -einit); // GeV/c
+  p1.mass = 0.938; // GeV/c^2
+  p2.mass = 0.938; // GeV/c^2
+  p1.energy = einit; //TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
+  p2.energy = einit;
+  p1.charge = +1;
+  p2.charge = +1;
   
   std::vector<Magnets::Magnet> magnetInfo{
      {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
@@ -58,25 +63,25 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
       Geometry::Dimensions{-10., 10., -10., 10., -750.0-430.0,  -750.0}
      },
       
-     // {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
-     //  Geometry::Dimensions{-10., 10., -10., 10., 2300.0, 2300.0+630.0}
-     // },
+     {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., 2300.0, 2300.0+630.0}
+     },
       
-     // {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34),
-     //  Geometry::Dimensions{-10., 10., -10., 10., 3180.0, 3180.0+550.0}
-     // },
+     {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., 3180.0, 3180.0+550.0}
+     },
       
-     // {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34),
-     //  Geometry::Dimensions{-10., 10., -10., 10., 3830.0, 3830.0+550.0}
-     // },
+     {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., 3830.0, 3830.0+550.0}
+     },
       
-     // {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34),
-     //  Geometry::Dimensions{-10., 10., -10., 10., 4730.0, 4730.0+630.0}
-     // },
+     {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., 4730.0, 4730.0+630.0}
+     },
       
-     // {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529),
-     //  Geometry::Dimensions{-10., 10., -10., 10., 5840.0, 5840.0+945.0}
-     // }
+     {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529),
+      Geometry::Dimensions{-10., 10., -10., 10., 5840.0, 5840.0+945.0}
+     }
   };
 
   // std::vector<Magnets::Magnet> magnetInfo{ {Magnets::DipoleY,
@@ -100,8 +105,9 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   // calos.draw();
 
   std::vector<TEveLine*> particleTrackViz;
-  particleTrackViz.resize(1);
-  particleTrackViz[0] = new TEveLine();
+  particleTrackViz.resize(nparticles);
+  for(unsigned i=0; i<nparticles; ++i)
+    particleTrackViz[i] = new TEveLine();
 
   //-------------------------------------------------------------------------------------------
   // Scanned sigma x (m) as a function of z (m) of the LHC beam  (John Jowett)
@@ -114,18 +120,20 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   std::array<std::string, tracking::TrackMode::NMODES> suf = {{ "_euler", "_rk4" }};
 
   double Bscale = 1.;
-  SimParticle simp(particle, nsteps[mode], stepsize[mode]);
+  SimParticle simp1(p1, nsteps[mode], stepsize[mode]);
+  SimParticle simp2(p2, nsteps[mode], stepsize[mode]);
 
-  const Track& track = simp.track(magnets, mode, Bscale );
-  std::vector<double> itEnergies = track.energies();
-  std::vector<ROOT::Math::XYZVector> itPositions = track.positions();
-  std::vector<ROOT::Math::XYZVector> itMomenta = track.momenta();
-  unsigned nStepsUsed = track.steps_used();
+  const Track& track1 = simp1.track(magnets, mode, Bscale );
+  const Track& track2 = simp2.track(magnets, mode, Bscale );
 
+  std::array<std::vector<double>, nparticles> itEnergies = {{ track1.energies(), track2.energies() }};
+  std::array<std::vector<ROOT::Math::XYZVector>, nparticles> itPositions = {{ track1.positions(), track2.positions() }};
+  std::array<std::vector<ROOT::Math::XYZVector>, nparticles> itMomenta = {{ track1.momenta(), track2.momenta() }};
+  std::array<unsigned, nparticles> nStepsUsed = {{ track1.steps_used(), track2.steps_used() }};
 
-  std::string roundx = std::to_string(particle.pos.X()).substr(0,4);
-  std::string roundy = std::to_string(particle.pos.Y()).substr(0,4);
-  std::string rounden = std::to_string(particle.mom.Z()).substr(0,6);
+  std::string roundx = std::to_string(p1.pos.X()).substr(0,4);
+  std::string roundy = std::to_string(p1.pos.Y()).substr(0,4);
+  std::string rounden = std::to_string(p1.mom.Z()).substr(0,6);
   std::replace( roundx.begin(), roundx.end(), '.', 'p');
   std::replace( roundx.begin(), roundx.end(), '-', 'm');
   std::replace( roundy.begin(), roundy.end(), '.', 'p');
@@ -136,32 +144,44 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   std::string filename("data/track" + suf[mode] + str_initpos + ".csv");
   
   std::fstream file;
+  unsigned minelem = *std::min_element(std::begin(nStepsUsed), std::end(nStepsUsed));
   file.open(filename, std::ios_base::out);
-  for(unsigned i_step = 0; i_step < nStepsUsed; i_step++)
+  for(unsigned i_step = 0; i_step<minelem; i_step++)
     {
-      particleTrackViz[0]->SetNextPoint( itPositions[i_step].X(), itPositions[i_step].Y(), itPositions[i_step].Z() );
-
+      for(unsigned ix=0; ix<nparticles; ix++) {
+	particleTrackViz[ix]->SetNextPoint(itPositions[ix][i_step].X(),
+					   itPositions[ix][i_step].Y(),
+					   itPositions[ix][i_step].Z() );
+    }
+  
       if (!file.is_open()) 
- 	std::cerr << "failed to open " << filename << '\n';
+	std::cerr << "failed to open " << filename << '\n';
       else {
 	if(i_step==0)
-	  file << "x,y,z,energy" << std::endl;
-	file << std::to_string( itPositions[i_step].X() ) << ","
-	     << std::to_string( itPositions[i_step].Y() ) << ","
-	     << std::to_string( itPositions[i_step].Z() ) << ","
-	     << std::to_string( itEnergies[i_step] )
+	  file << "x1,y1,z1,energy1,x2,y2,z2,energy2" << std::endl;
+	file << std::to_string( itPositions[0][i_step].X() ) << ","
+	     << std::to_string( itPositions[0][i_step].Y() ) << ","
+	     << std::to_string( itPositions[0][i_step].Z() ) << ","
+	     << std::to_string( itEnergies[0][i_step] ) << ","
+	     << std::to_string( itPositions[1][i_step].X() ) << ","
+	     << std::to_string( itPositions[1][i_step].Y() ) << ","
+	     << std::to_string( itPositions[1][i_step].Z() ) << ","
+	     << std::to_string( itEnergies[1][i_step] )
 	     << std::endl;
       }
     }
 
-  std::string histname = "track 0";
-  particleTrackViz[0]->SetName( histname.c_str() );
-  particleTrackViz[0]->SetLineStyle(1);
-  particleTrackViz[0]->SetLineWidth(5);
-  particleTrackViz[0]->SetMainColor(kRed);
-  particleTrackViz[0]->SetMainAlpha(0.7);
-  gEve->AddElement(particleTrackViz[0]);
-  gEve->Redraw3D(kTRUE);
+
+  for(unsigned ix=0; ix<nparticles; ix++) {
+    std::string histname = "track " + std::to_string(ix);
+    particleTrackViz[ix]->SetName( histname.c_str() );
+    particleTrackViz[ix]->SetLineStyle(1);
+    particleTrackViz[ix]->SetLineWidth(5);
+    particleTrackViz[ix]->SetMainAlpha(0.7);
+    particleTrackViz[ix]->SetMainColor(kRed);
+    gEve->AddElement(particleTrackViz[ix]);
+    gEve->Redraw3D(kTRUE);
+  }
 }
 
 int main(int argc, char **argv) {

@@ -52,15 +52,21 @@ def run(FLAGS):
 
     figkw = {'x.axis_label': 'Z [cm]',
              'y.fixed_location': 0.}
-    b.graph(idx=0, data=[df.z,df.x], style='circle',
+    b.graph(idx=0, data=[df.z1,df.x1], style='circle',
             color='orange', size=1, line=False,
+            fig_kwargs=figkw)
+    b.graph(idx=0, data=[df.z2,df.x2], style='circle',
+            color='blue', size=1, line=False,
             fig_kwargs=figkw)
     xaxis_label = 'X [cm]'
     b.label(xaxis_label, idx=0, **dlabel)
 
     figkw.update(x_range=b.get_figure(idx=0).x_range)
-    b.graph(idx=1, data=[df.z,df.y], style='circle',
+    b.graph(idx=1, data=[df.z1,df.y1], style='circle',
             color='orange', size=1, line=False,
+            fig_kwargs=figkw)
+    b.graph(idx=1, data=[df.z2,df.y2], style='circle',
+            color='blue', size=1, line=False,
             fig_kwargs=figkw)
     xaxis_label = 'Y [cm]'
     b.label(xaxis_label, idx=1, **dlabel)
