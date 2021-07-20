@@ -15,16 +15,15 @@
 #include "TStyle.h"
 #include "TRandom.h"
 
-void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
+void run(tracking::TrackMode mode)
 {
   gRandom->SetSeed(0);
   gStyle->SetPalette(56); // 53 = black body radiation, 56 = inverted black body radiator, 103 = sunset, 87 == light temperature
  
   //define the initial properties of the incident particle
   Particle particle;
-  // particle.pos = ROOT::Math::XYZVector(0.0, 0.0, -7000.0); // cm
-  particle.pos = ROOT::Math::XYZVector(xinit, yinit, -7000.0); // cm
-  particle.mom = ROOT::Math::XYZVector(0.0, 0.0, einit); // GeV/c
+  particle.pos = ROOT::Math::XYZVector(0.0, 0.0, -7000.0); // cm
+  particle.mom = ROOT::Math::XYZVector(0.0, 0.0, 2760.0/2.); // GeV/c
   particle.mass = 0.938; // GeV/c^2
   particle.energy = TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
   particle.charge = +1;
@@ -121,20 +120,8 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   std::vector<ROOT::Math::XYZVector> itPositions = track.positions();
   std::vector<ROOT::Math::XYZVector> itMomenta = track.momenta();
   unsigned nStepsUsed = track.steps_used();
-
-
-  std::string roundx = std::to_string(particle.pos.X()).substr(0,4);
-  std::string roundy = std::to_string(particle.pos.Y()).substr(0,4);
-  std::string rounden = std::to_string(particle.mom.Z()).substr(0,6);
-  std::replace( roundx.begin(), roundx.end(), '.', 'p');
-  std::replace( roundx.begin(), roundx.end(), '-', 'm');
-  std::replace( roundy.begin(), roundy.end(), '.', 'p');
-  std::replace( roundy.begin(), roundy.end(), '-', 'm');
-  std::replace( rounden.begin(), rounden.end(), '.', 'p');
-  std::string str_initpos = "_" + roundx + "X_" + roundy + "Y_" + rounden + "En";
-  
-  std::string filename("data/track" + suf[mode] + str_initpos + ".csv");
-  
+    
+  std::string filename("data/track" + suf[mode] + ".csv");
   std::fstream file;
   file.open(filename, std::ios_base::out);
   for(unsigned i_step = 0; i_step < nStepsUsed; i_step++)
@@ -168,49 +155,43 @@ int main(int argc, char **argv) {
   TApplication myapp("myapp", &argc, argv);
 
   tracking::TrackMode mode = tracking::TrackMode::Euler;
-  if(argc<2) {
+  if(argc<2)
     std::cerr << "No arguments passed." << std::endl;
-    std::exit(0);
-  }
-
-  namespace po = boost::program_options;
-  po::options_description desc("Options");
-  desc.add_options()
-    ("mode", po::value<std::string>()->default_value("euler"), "numerical solver")
-    ("x", po::value<float>()->default_value(0.f), "inital beam x position")
-    ("y", po::value<float>()->default_value(0.f), "inital beam y position")
-    ("energy", po::value<float>()->default_value(1380.f), "beam energy position");
-      
-  po::variables_map vm;
-  po::store(po::parse_command_line(argc,argv,desc), vm);
-  po::notify(vm);
-
-  if(vm.count("mode")) {
-    std::string m_ = boost::any_cast<std::string>(vm["mode"].value());
-    if(m_ == "euler") mode = tracking::TrackMode::Euler;
-    else if(m_ == "rk4") mode = tracking::TrackMode::RungeKutta4;
-    else throw std::invalid_argument("This mode is not supported.");
-  }
   else
-    throw std::invalid_argument("Please specify a mode");
+    {
+      namespace po = boost::program_options;
+      po::options_description desc("Options");
+      desc.add_options()
+	("mode", po::value<std::string>()->default_value("euler"), "numerical solver");
+      
+      po::variables_map vm;
+      po::store(po::parse_command_line(argc,argv,desc), vm);
+      po::notify(vm);
 
-  std::cout << "--- Executable options ---" << std::endl;
-  for (const auto& it : vm) {
-    std::cout << it.first.c_str() << ": ";
-    auto& value = it.second.value();
-    if (auto v = boost::any_cast<float>(&value))
-      std::cout << *v << std::endl;
-    else if (auto v = boost::any_cast<std::string>(&value))
-      std::cout << *v << std::endl;
-    else
-      std::cerr << "type missing" << std::endl;
-  }
+      if(vm.count("mode")) {
+	std::string m_ = boost::any_cast<std::string>(vm["mode"].value());
+	if(m_ == "euler") mode = tracking::TrackMode::Euler;
+	else if(m_ == "rk4") mode = tracking::TrackMode::RungeKutta4;
+	else throw std::invalid_argument("This mode is not supported.");
+      }
+      else
+	throw std::invalid_argument("Please specify a mode");
+
+      std::cout << "--- Executable options ---" << std::endl;
+      for (const auto& it : vm) {
+	std::cout << it.first.c_str() << ": ";
+	auto& value = it.second.value();
+	if (auto v = boost::any_cast<uint32_t>(&value))
+	  std::cout << *v << std::endl;
+	else if (auto v = boost::any_cast<std::string>(&value))
+	  std::cout << *v << std::endl;
+	else
+	  std::cerr << "type missing" << std::endl;
+      }
+    }
 
   //run simulation
-  float xinit = boost::any_cast<float>(vm["x"].value());
-  float yinit = boost::any_cast<float>(vm["y"].value());
-  float einit = boost::any_cast<float>(vm["energy"].value());
-  run(mode, xinit, yinit, einit);
+  run(mode);
 
   myapp.Run();
   
