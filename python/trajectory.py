@@ -23,16 +23,17 @@ def run(FLAGS):
                              str(FLAGS.energy) + 'En.html')
 
     ##########################################################
-    ######## Data Processing #################################
+    ######## File reading ####################################
     ##########################################################
-    posstr = str(FLAGS.x).replace('-', 'm').replace('.', 'p') + "*" + \
-        str(FLAGS.y).replace('-', 'm').replace('.', 'p') + "*" + \
+    posstr = str(FLAGS.x).replace('.', 'p') + "*" + \
+        str(FLAGS.y).replace('.', 'p') + "*" + \
         str(FLAGS.energy).replace('.', 'p')
-    search_str = os.path.join(BASE, 'data/track*' + FLAGS.mode + '*' + posstr + '*.csv')
+    search_str = os.path.join(BASE, 'data/track_' + FLAGS.mode + '_' + posstr + '*.csv')
 
     l = glob.glob(search_str)
     if len(l) != 1:
         print('Pattern: ', search_str)
+        print('NHits: ', len(l))
         raise RuntimeError('Only one data file can match the pattern. Check the input arguments and the existing data files.')
     
     df = pd.read_csv( l[0] )
@@ -47,8 +48,8 @@ def run(FLAGS):
     additional_kwargs = {'text_font_size': '9pt', 'text_font_style': 'italic',
                          'x_units': 'screen', 'y_units': 'screen',
                          'angle': np.pi/2}
-    dlabel = dict(x=FIGDIMS[0]/2+5*STEPS[0],
-                  y=FIGDIMS[1]-38*STEPS[1], **additional_kwargs)
+    dlabel = dict(x=FIGDIMS[0]/2+3*STEPS[0],
+                  y=FIGDIMS[1]-32*STEPS[1], **additional_kwargs)
 
     figkw = {'x.axis_label': 'Z [cm]',
              'y.fixed_location': 0.}

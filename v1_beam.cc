@@ -131,13 +131,11 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   std::array<std::vector<ROOT::Math::XYZVector>, nparticles> itMomenta = {{ track1.momenta(), track2.momenta() }};
   std::array<unsigned, nparticles> nStepsUsed = {{ track1.steps_used(), track2.steps_used() }};
 
-  std::string roundx = std::to_string(p1.pos.X()).substr(0,4);
-  std::string roundy = std::to_string(p1.pos.Y()).substr(0,4);
-  std::string rounden = std::to_string(p1.mom.Z()).substr(0,6);
+  std::string roundx = std::to_string(p1.pos.X()).substr(0,6);
+  std::string roundy = std::to_string(p1.pos.Y()).substr(0,6);
+  std::string rounden = std::to_string(p1.mom.Z()).substr(0,8);
   std::replace( roundx.begin(), roundx.end(), '.', 'p');
-  std::replace( roundx.begin(), roundx.end(), '-', 'm');
   std::replace( roundy.begin(), roundy.end(), '.', 'p');
-  std::replace( roundy.begin(), roundy.end(), '-', 'm');
   std::replace( rounden.begin(), rounden.end(), '.', 'p');
   std::string str_initpos = "_" + roundx + "X_" + roundy + "Y_" + rounden + "En";
   
@@ -197,8 +195,8 @@ int main(int argc, char **argv) {
   po::options_description desc("Options");
   desc.add_options()
     ("mode", po::value<std::string>()->default_value("euler"), "numerical solver")
-    ("x", po::value<float>()->default_value(0.f), "inital beam x position")
-    ("y", po::value<float>()->default_value(0.f), "inital beam y position")
+    ("x", po::value<float>()->default_value(0.f), "initial beam x position")
+    ("y", po::value<float>()->default_value(0.f), "initial beam y position")
     ("energy", po::value<float>()->default_value(1380.f), "beam energy position");
       
   po::variables_map vm;
