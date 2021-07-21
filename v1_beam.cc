@@ -131,9 +131,9 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   std::array<std::vector<ROOT::Math::XYZVector>, nparticles> itMomenta = {{ track1.momenta(), track2.momenta() }};
   std::array<unsigned, nparticles> nStepsUsed = {{ track1.steps_used(), track2.steps_used() }};
 
-  std::string roundx = std::to_string(p1.pos.X()).substr(0,6);
-  std::string roundy = std::to_string(p1.pos.Y()).substr(0,6);
-  std::string rounden = std::to_string(p1.mom.Z()).substr(0,8);
+  std::string roundx = std::to_string(p1.pos.X()).substr(0,8);
+  std::string roundy = std::to_string(p1.pos.Y()).substr(0,8);
+  std::string rounden = std::to_string(p1.mom.Z()).substr(0,10);
   std::replace( roundx.begin(), roundx.end(), '.', 'p');
   std::replace( roundy.begin(), roundy.end(), '.', 'p');
   std::replace( rounden.begin(), rounden.end(), '.', 'p');

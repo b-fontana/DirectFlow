@@ -35,6 +35,8 @@ def run(FLAGS):
         print('Pattern: ', search_str)
         print('NHits: ', len(l))
         raise RuntimeError('Only one data file can match the pattern. Check the input arguments and the existing data files.')
+    else:
+        print('Data: ', l[0])
     
     df = pd.read_csv( l[0] )
 
@@ -72,13 +74,13 @@ def run(FLAGS):
     xaxis_label = 'Y [cm]'
     b.label(xaxis_label, idx=1, **dlabel)
 
-    dlatex = dict(x=FIGDIMS[0]-22*STEPS[0],
+    dlatex = dict(x=FIGDIMS[0]-16*STEPS[0],
                   y=FIGDIMS[1]-25*STEPS[1],
                   x_units="screen",
                   y_units="screen",
                   text_font_size='10pt')
     latex1 = LatexLabel(
-        text="x_{{init}} = {}, y_{{init}} = {}".format(round(FLAGS.x,2), round(FLAGS.y,2)),
+        text="x_{{init}} = {}, y_{{init}} = {}".format(round(FLAGS.x,5), round(FLAGS.y,5)),
         render_mode="css",
         background_fill_alpha=0,
         **dlatex
