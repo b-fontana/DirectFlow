@@ -57,24 +57,26 @@ private:
 //simulates the particle trajectory
 ////////////////////////////////////////////
 class SimParticle {
- public:
+public:
   template <typename T> 
-    using Vec = std::vector<T>;
+  using Vec = std::vector<T>;
   using XYZ = ROOT::Math::XYZVector;
   using Ltz = ROOT::Math::PxPyPzMVector;
-  
- SimParticle(Particle pParticle)
-   : mParticle(pParticle),
-    mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES, false) {}
-  
- SimParticle(Particle pParticle, unsigned pNsteps, double pStepSize)
-   : mParticle(pParticle),
-    mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES, false),
-    mNsteps(pNsteps), mStepSize(pStepSize) {};
 
-  const Track& track(const Magnets&, tracking::TrackMode, double);
+  SimParticle(Particle pParticle)
+    : mParticle(pParticle),
+      mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES, false) {}
+  
+  SimParticle(Particle pParticle, unsigned pNsteps, double pStepSize)
+    : mParticle(pParticle),
+      mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES, false),
+      mNsteps(pNsteps), mStepSize(pStepSize) {};
+
+  const Track& track(const Magnets&, tracking::TrackMode, double) &;
+  //no copies of big objects, so forbid calling 'track()' on a temporary object
+  Track track(const Magnets&, tracking::TrackMode, double) && = delete;
     
- private:
+private:
   Particle mParticle;
   Vec<Track> mTracks;
   Vec<bool> mTrackCheck;

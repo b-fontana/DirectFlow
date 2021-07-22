@@ -8,32 +8,27 @@ SimParticle::XYZ SimParticle::calc_lorentz_force(double charge, const XYZ& vel, 
   return charge*vel.Cross(b); // (A*s)*(cm/s)*(kg/(A*s*s)) = (cm*kg)/(s*s)
 }
 
-const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode, double scale ) {
-  const Track* t = nullptr;
+const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode, double scale ) & {
   using m = tracking::TrackMode;
   
-  if(mode == m::Euler) {
-      
+  if(mode == m::Euler) { 
     if(mTrackCheck[m::Euler] == false) {
       mTracks[m::Euler] = track_euler(magnets, scale);
       mTrackCheck[m::Euler] = true;
     }
-    t = &( mTracks[m::Euler] );
-      
   }
-  else if(mode == m::RungeKutta4) {
-      
+  
+  else if(mode == m::RungeKutta4) { 
     if(mTrackCheck[m::RungeKutta4] == false) {
       mTracks[m::RungeKutta4] = track_rungekutta4(magnets, scale);
   	mTrackCheck[m::RungeKutta4] = true;
-    }
-    t = &( mTracks[m::RungeKutta4] );
-      
+    }    
   }
+  
   else   
     throw std::invalid_argument("The tracking mode specified is not supported.");
 
-  return *t;
+  return mTracks[mode];
 }
 
 Track SimParticle::track_euler(const Magnets& magnets, double scale)

@@ -15,24 +15,36 @@
 #include "TStyle.h"
 #include "TRandom.h"
 
-void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
+struct InputArgs {
+public:
+  float x;
+  float y;
+  float energy;
+  unsigned nparticles;
+};
+  
+void run(tracking::TrackMode mode, const InputArgs& args)
 {
   gRandom->SetSeed(0);
   gStyle->SetPalette(56); // 53 = black body radiation, 56 = inverted black body radiator, 103 = sunset, 87 == light temperature
  
   //define the initial properties of the incident particle
-  constexpr unsigned nparticles = 2;
-  Particle p1, p2;
-  p1.pos = ROOT::Math::XYZVector(xinit, yinit,  -7000.0); // cm
-  p2.pos = ROOT::Math::XYZVector(xinit, yinit, 7000.0); // cm
-  p1.mom = ROOT::Math::XYZVector(0.0, 0.0,  einit); // GeV/c
-  p2.mom = ROOT::Math::XYZVector(0.0, 0.0, -einit); // GeV/c
-  p1.mass = 0.938; // GeV/c^2
-  p2.mass = 0.938; // GeV/c^2
-  p1.energy = einit; //TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
-  p2.energy = einit;
-  p1.charge = +1;
-  p2.charge = +1;
+  std::vector<Particle> p1(args.nparticles);
+  std::vector<Particle> p2(args.nparticles);
+  for(unsigned i=0; i<args.nparticles; ++i) {
+    //negative z side
+    p1[i].pos = ROOT::Math::XYZVector(args.x, args.y, -7000.0); // cm
+    p1[i].mom = ROOT::Math::XYZVector(0.0, 0.0, args.energy); // GeV/c
+    p1[i].mass = 0.938; // GeV/c^2
+    p1[i].energy = args.energy; //TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
+    p1[i].charge = +1;
+    //positive z side
+    p2[i].pos = ROOT::Math::XYZVector(args.x, args.y, 7000.0); // cm
+    p2[i].mom = ROOT::Math::XYZVector(0.0, 0.0, -args.energy); // GeV/c
+    p2[i].mass = 0.938; // GeV/c^2
+    p2[i].energy = args.energy;
+    p2[i].charge = +1;
+  }
   
   std::vector<Magnets::Magnet> magnetInfo{
      {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
@@ -90,7 +102,7 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   // 					    std::make_pair(0.,-0.5),
   // 					    std::make_pair(particle.pos.Z()-1500, particle.pos.Z()+3000), 60., 60.},
   // };
-
+    
   Magnets magnets(magnetInfo);
   magnets.draw();
 
@@ -104,10 +116,12 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   // Calorimeters calos(caloInfo);
   // calos.draw();
 
-  std::vector<TEveLine*> particleTrackViz;
-  particleTrackViz.resize(nparticles);
-  for(unsigned i=0; i<nparticles; ++i)
-    particleTrackViz[i] = new TEveLine();
+  std::vector<TEveLine*> particleTrackViz1(args.nparticles);
+  std::vector<TEveLine*> particleTrackViz2(args.nparticles);
+  for(unsigned i=0; i<args.nparticles; ++i) {
+    particleTrackViz1[i] = new TEveLine();
+    particleTrackViz2[i] = new TEveLine();
+  }
 
   //-------------------------------------------------------------------------------------------
   // Scanned sigma x (m) as a function of z (m) of the LHC beam  (John Jowett)
@@ -120,20 +134,40 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   std::array<std::string, tracking::TrackMode::NMODES> suf = {{ "_euler", "_rk4" }};
 
   double Bscale = 1.;
-  SimParticle simp1(p1, nsteps[mode], stepsize[mode]);
-  SimParticle simp2(p2, nsteps[mode], stepsize[mode]);
+  std::vector<SimParticle> simp1;
+  std::vector<SimParticle> simp2;
+  for(unsigned i=0; i<args.nparticles; ++i) {
+    simp1.push_back( SimParticle(p1[i], nsteps[mode], stepsize[mode]) );
+    simp2.push_back( SimParticle(p2[i], nsteps[mode], stepsize[mode]) );
+  }
 
-  const Track& track1 = simp1.track(magnets, mode, Bscale );
-  const Track& track2 = simp2.track(magnets, mode, Bscale );
+  std::vector<const Track*> tracks1(args.nparticles);
+  std::vector<const Track*> tracks2(args.nparticles);
+  for(unsigned i=0; i<args.nparticles; ++i) {
+    tracks1[i] = &( simp1[i].track( magnets, mode, Bscale ));
+    tracks2[i] = &( simp2[i].track( magnets, mode, Bscale ));
+  }
 
-  std::array<std::vector<double>, nparticles> itEnergies = {{ track1.energies(), track2.energies() }};
-  std::array<std::vector<ROOT::Math::XYZVector>, nparticles> itPositions = {{ track1.positions(), track2.positions() }};
-  std::array<std::vector<ROOT::Math::XYZVector>, nparticles> itMomenta = {{ track1.momenta(), track2.momenta() }};
-  std::array<unsigned, nparticles> nStepsUsed = {{ track1.steps_used(), track2.steps_used() }};
+  std::vector< std::vector<double> > itEnergies1(args.nparticles), itEnergies2(args.nparticles);
+  std::vector<std::vector<ROOT::Math::XYZVector>> itPositions1(args.nparticles), itPositions2(args.nparticles);
+  std::vector<std::vector<ROOT::Math::XYZVector>> itMomenta1(args.nparticles), itMomenta2(args.nparticles);
+  std::vector<unsigned> nStepsUsed1(args.nparticles), nStepsUsed2(args.nparticles);
+  for(unsigned i=0; i<args.nparticles; ++i) {
+    //negative z side
+    itEnergies1[i]  = tracks1[i]->energies();
+    itPositions1[i] = tracks1[i]->positions();
+    itMomenta1[i]   = tracks1[i]->momenta();
+    nStepsUsed1[i]  = tracks1[i]->steps_used();
+    //positive z side
+    itEnergies2[i]  = tracks2[i]->energies();
+    itPositions2[i] = tracks2[i]->positions();
+    itMomenta2[i]   = tracks2[i]->momenta();
+    nStepsUsed2[i]  = tracks2[i]->steps_used();
+  }
 
-  std::string roundx = std::to_string(p1.pos.X()).substr(0,8);
-  std::string roundy = std::to_string(p1.pos.Y()).substr(0,8);
-  std::string rounden = std::to_string(p1.mom.Z()).substr(0,10);
+  std::string roundx = std::to_string(p1[0].pos.X()).substr(0,8);
+  std::string roundy = std::to_string(p1[0].pos.Y()).substr(0,8);
+  std::string rounden = std::to_string(p1[0].mom.Z()).substr(0,10);
   std::replace( roundx.begin(), roundx.end(), '.', 'p');
   std::replace( roundy.begin(), roundy.end(), '.', 'p');
   std::replace( rounden.begin(), rounden.end(), '.', 'p');
@@ -142,14 +176,18 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
   std::string filename("data/track" + suf[mode] + str_initpos + ".csv");
   
   std::fstream file;
-  unsigned minelem = *std::min_element(std::begin(nStepsUsed), std::end(nStepsUsed));
+  unsigned minelem = *std::min_element(std::begin(nStepsUsed1), std::end(nStepsUsed1));
   file.open(filename, std::ios_base::out);
   for(unsigned i_step = 0; i_step<minelem; i_step++)
     {
-      for(unsigned ix=0; ix<nparticles; ix++) {
-	particleTrackViz[ix]->SetNextPoint(itPositions[ix][i_step].X(),
-					   itPositions[ix][i_step].Y(),
-					   itPositions[ix][i_step].Z() );
+      for(unsigned ix=0; ix<args.nparticles; ix++) {
+	particleTrackViz1[ix]->SetNextPoint(itPositions1[ix][i_step].X(),
+					    itPositions1[ix][i_step].Y(),
+					    itPositions1[ix][i_step].Z() );
+
+	particleTrackViz2[ix]->SetNextPoint(itPositions2[ix][i_step].X(),
+					    itPositions2[ix][i_step].Y(),
+					    itPositions2[ix][i_step].Z() );
     }
   
       if (!file.is_open()) 
@@ -157,27 +195,38 @@ void run(tracking::TrackMode mode, float xinit, float yinit, float einit)
       else {
 	if(i_step==0)
 	  file << "x1,y1,z1,energy1,x2,y2,z2,energy2" << std::endl;
-	file << std::to_string( itPositions[0][i_step].X() ) << ","
-	     << std::to_string( itPositions[0][i_step].Y() ) << ","
-	     << std::to_string( itPositions[0][i_step].Z() ) << ","
-	     << std::to_string( itEnergies[0][i_step] ) << ","
-	     << std::to_string( itPositions[1][i_step].X() ) << ","
-	     << std::to_string( itPositions[1][i_step].Y() ) << ","
-	     << std::to_string( itPositions[1][i_step].Z() ) << ","
-	     << std::to_string( itEnergies[1][i_step] )
+	file << std::to_string( itPositions1[0][i_step].X() ) << ","
+	     << std::to_string( itPositions1[0][i_step].Y() ) << ","
+	     << std::to_string( itPositions1[0][i_step].Z() ) << ","
+	     << std::to_string( itEnergies1[0][i_step] ) << ","
+	     << std::to_string( itPositions2[0][i_step].X() ) << ","
+	     << std::to_string( itPositions2[0][i_step].Y() ) << ","
+	     << std::to_string( itPositions2[0][i_step].Z() ) << ","
+	     << std::to_string( itEnergies2[0][i_step] ) << ","
 	     << std::endl;
       }
     }
 
 
-  for(unsigned ix=0; ix<nparticles; ix++) {
-    std::string histname = "track " + std::to_string(ix);
-    particleTrackViz[ix]->SetName( histname.c_str() );
-    particleTrackViz[ix]->SetLineStyle(1);
-    particleTrackViz[ix]->SetLineWidth(5);
-    particleTrackViz[ix]->SetMainAlpha(0.7);
-    particleTrackViz[ix]->SetMainColor(kRed);
-    gEve->AddElement(particleTrackViz[ix]);
+  for(unsigned ix=0; ix<args.nparticles; ix++) {
+    std::string histname1 = "track_zpos_ " + std::to_string(ix);
+    particleTrackViz1[ix]->SetName( histname1.c_str() );
+    particleTrackViz1[ix]->SetLineStyle(1);
+    particleTrackViz1[ix]->SetLineWidth(3);
+    particleTrackViz1[ix]->SetMainAlpha(0.7);
+    particleTrackViz1[ix]->SetMainColor(kRed+3);
+
+    std::string histname2 = "track_zneg_ " + std::to_string(ix);
+    particleTrackViz2[ix]->SetName( histname2.c_str() );
+    particleTrackViz2[ix]->SetLineStyle(1);
+    particleTrackViz2[ix]->SetLineWidth(3);
+    particleTrackViz2[ix]->SetMainAlpha(0.7);
+    particleTrackViz2[ix]->SetMainColor(kRed-7);
+
+    gEve->AddElement(particleTrackViz1[ix]);
+    gEve->Redraw3D(kTRUE);
+
+    gEve->AddElement(particleTrackViz2[ix]);
     gEve->Redraw3D(kTRUE);
   }
 }
@@ -197,12 +246,17 @@ int main(int argc, char **argv) {
     ("mode", po::value<std::string>()->default_value("euler"), "numerical solver")
     ("x", po::value<float>()->default_value(0.f), "initial beam x position")
     ("y", po::value<float>()->default_value(0.f), "initial beam y position")
-    ("energy", po::value<float>()->default_value(1380.f), "beam energy position");
+    ("energy", po::value<float>()->default_value(1380.f), "beam energy position")
+    ("nparticles", po::value<unsigned>()->default_value(1), "number of particles to generate on each beam");
       
   po::variables_map vm;
   po::store(po::parse_command_line(argc,argv,desc), vm);
   po::notify(vm);
 
+  if(vm.count("help")) {
+    std::cerr << desc << std::endl;
+  }
+      
   if(vm.count("mode")) {
     std::string m_ = boost::any_cast<std::string>(vm["mode"].value());
     if(m_ == "euler") mode = tracking::TrackMode::Euler;
@@ -220,15 +274,20 @@ int main(int argc, char **argv) {
       std::cout << *v << std::endl;
     else if (auto v = boost::any_cast<std::string>(&value))
       std::cout << *v << std::endl;
+    else if (auto v = boost::any_cast<unsigned>(&value))
+      std::cout << *v << std::endl;
     else
       std::cerr << "type missing" << std::endl;
   }
+  std::cout << "--------------------------" << std::endl;
 
   //run simulation
-  float xinit = boost::any_cast<float>(vm["x"].value());
-  float yinit = boost::any_cast<float>(vm["y"].value());
-  float einit = boost::any_cast<float>(vm["energy"].value());
-  run(mode, xinit, yinit, einit);
+  InputArgs info;
+  info.x = boost::any_cast<float>(vm["x"].value());
+  info.y = boost::any_cast<float>(vm["y"].value());
+  info.energy = boost::any_cast<float>(vm["energy"].value());
+  info.nparticles = boost::any_cast<unsigned>(vm["nparticles"].value());
+  run(mode, info);
 
   myapp.Run();
   
