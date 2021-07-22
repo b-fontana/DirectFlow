@@ -41,8 +41,8 @@ public:
   };
 
   Geometry() {
-    TEveManager::Create();
-    this->draw_beam_axis();
+    // TEveManager::Create();
+    // this->draw_beam_axis();
     //this->draw_beams();
   };
 
