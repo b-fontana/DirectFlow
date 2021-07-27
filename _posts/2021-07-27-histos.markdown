@@ -1,9 +1,14 @@
 ---
 layout: post
 title:  "Momenta Histograms"
-date:   2021-07-20 10:00:18 +0200
+date:   2021-07-27 17:23:00 +0200
 categories: plots
 ---
+
+**Description:**
+
+Multiple protons, on both sides of the ALICE IP were generated. All magnetic fields were turned off. At a predetermined distance from the interaction point (IP), for both sides, a deviation ("force") was applied, forcing each particle to pass trough the IP, defined to lie at (0,0,0). The protons are generated in batches, and their exact positions is randomized with normal distributions around the mean X and Y beam position values provided by the user.
+Within each batch, pairs of protons are constructed, where each proton in a pair started from opposite sides (positive or negative Z coordinate). At the IP the momenta of the protons in each pair are added along the three spatial directions. This is repeated for all the pairs in all the batches, and the results are displayed with the histograms below.
 
 **Parameters:**
 
@@ -12,6 +17,7 @@ categories: plots
 - Gaussian width: 0.1cm
 - Energy: 1380GeV
 - Number of particle pairs: 100K
+- Distance at which the deviation is applied: 50m
 
 
 {% include traj_libs.html %}
@@ -20,6 +26,6 @@ categories: plots
 
 ------------
 
-You can find the code used for plotting [here][plotcode].
+You can find the code [here][plotcode].
 
-[plotcode]: https://github.com/b-fontana/DirectFlow/blob/master/python/momhistos.py
+[plotcode]: https://github.com/b-fontana/DirectFlow/
