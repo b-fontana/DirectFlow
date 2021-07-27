@@ -1,6 +1,6 @@
 #include "include/geometry.h"
 
-void Magnets::draw() {
+void Magnets::draw_() const {
 
   std::vector<TEveBox*> magnets( mMagnetsInfo.size() );
 
@@ -76,7 +76,7 @@ Magnets::XYZ Magnets::field(XYZ pos, double scale=1.0) const {
   return Bfield;
 }
 
-void Calorimeters::draw() const {
+void Calorimeters::draw_() const {
 
   std::vector<TEveBox*> calos( mCalosInfo.size() );
 

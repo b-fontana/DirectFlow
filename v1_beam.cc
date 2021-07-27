@@ -18,6 +18,7 @@
 
 struct InputArgs {
 public:
+  bool draw;
   float x;
   float y;
   float energy;
@@ -40,58 +41,58 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   // generate random positions around input positions
   std::random_device seeder;
   std::mt19937 rng( seeder() );
-  std::normal_distribution<double> xdist( args.x, 1 );
-  std::normal_distribution<double> ydist( args.y, 1 );
+  std::normal_distribution<double> xdist( args.x, 0.1 ); //beam width of 1 millimeter
+  std::normal_distribution<double> ydist( args.y, 0.1 );
   
-  std::vector<Magnets::Magnet> magnetInfo{
-     {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
-      Geometry::Dimensions{-10., 10., -10., 10., -5840.0-945.0, -5840.0}
-     },
+  // std::vector<Magnets::Magnet> magnetInfo{
+  //    {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
+  //     Geometry::Dimensions{-10., 10., -10., 10., -5840.0-945.0, -5840.0}
+  //    },
      
-     {Magnets::Quadrupole, "Q4_neg", kYellow,  std::make_pair(200.34,-200.34),
-      Geometry::Dimensions{-10., 10., -10., 10., -4730.0-630.0, -4730.0}
-     },
+  //    {Magnets::Quadrupole, "Q4_neg", kYellow,  std::make_pair(200.34,-200.34),
+  //     Geometry::Dimensions{-10., 10., -10., 10., -4730.0-630.0, -4730.0}
+  //    },
      
-     {Magnets::Quadrupole, "Q3_neg", kYellow,  std::make_pair(-200.34,200.34),
-      Geometry::Dimensions{-10., 10., -10., 10., -3830.0-550.0, -3830.0}
-     },
+  //    {Magnets::Quadrupole, "Q3_neg", kYellow,  std::make_pair(-200.34,200.34),
+  //     Geometry::Dimensions{-10., 10., -10., 10., -3830.0-550.0, -3830.0}
+  //    },
      
-     {Magnets::Quadrupole, "Q2_neg", kYellow,  std::make_pair(-200.34,200.34),
-      Geometry::Dimensions{-10., 10., -10., 10., -3180.0-550.0, -3180.0}
-     },
+  //    {Magnets::Quadrupole, "Q2_neg", kYellow,  std::make_pair(-200.34,200.34),
+  //     Geometry::Dimensions{-10., 10., -10., 10., -3180.0-550.0, -3180.0}
+  //    },
      
-     {Magnets::Quadrupole, "Q1_neg", kYellow,  std::make_pair(200.34,-200.34),
-      Geometry::Dimensions{-10., 10., -10., 10., -2300.0-630.0, -2300.0}
-     },
+  //    {Magnets::Quadrupole, "Q1_neg", kYellow,  std::make_pair(200.34,-200.34),
+  //     Geometry::Dimensions{-10., 10., -10., 10., -2300.0-630.0, -2300.0}
+  //    },
       
-     // {Magnets::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.),
-     //  Geometry::Dimensions{-10., 10., -10., 10., -1920.0-190.0, -1920.0}
-     // },
+  //    {Magnets::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.),
+  //     Geometry::Dimensions{-10., 10., -10., 10., -1920.0-190.0, -1920.0}
+  //    },
       
-     // {Magnets::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),
-     //  Geometry::Dimensions{-10., 10., -10., 10., -750.0-430.0,  -750.0}
-     // },
+  //    {Magnets::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),
+  //     Geometry::Dimensions{-10., 10., -10., 10., -750.0-430.0,  -750.0}
+  //    },
       
-     {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
-      Geometry::Dimensions{-10., 10., -10., 10., 2300.0, 2300.0+630.0}
-     },
+  //    {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
+  //     Geometry::Dimensions{-10., 10., -10., 10., 2300.0, 2300.0+630.0}
+  //    },
       
-     {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34),
-      Geometry::Dimensions{-10., 10., -10., 10., 3180.0, 3180.0+550.0}
-     },
+  //    {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34),
+  //     Geometry::Dimensions{-10., 10., -10., 10., 3180.0, 3180.0+550.0}
+  //    },
       
-     {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34),
-      Geometry::Dimensions{-10., 10., -10., 10., 3830.0, 3830.0+550.0}
-     },
+  //    {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34),
+  //     Geometry::Dimensions{-10., 10., -10., 10., 3830.0, 3830.0+550.0}
+  //    },
       
-     {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34),
-      Geometry::Dimensions{-10., 10., -10., 10., 4730.0, 4730.0+630.0}
-     },
+  //    {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34),
+  //     Geometry::Dimensions{-10., 10., -10., 10., 4730.0, 4730.0+630.0}
+  //    },
       
-     {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529),
-      Geometry::Dimensions{-10., 10., -10., 10., 5840.0, 5840.0+945.0}
-     }
-  };
+  //    {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529),
+  //     Geometry::Dimensions{-10., 10., -10., 10., 5840.0, 5840.0+945.0}
+  //    }
+  // };
 
   // std::vector<Magnets::Magnet> magnetInfo{ {Magnets::DipoleY,
   // 					    "D1_neg",
@@ -99,23 +100,27 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   // 					    std::make_pair(0.,-0.5),
   // 					    std::make_pair(particle.pos.Z()-1500, particle.pos.Z()+3000), 60., 60.},
   // };
-  Magnets magnets(magnetInfo);
-  // magnets.draw();
+
+  std::vector<Magnets::Magnet> magnetInfo{
+					  {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,0.),
+					   Geometry::Dimensions{-10., 10., -10., 10., -5840.0-945.0, -5840.0}
+					  }
+  };
+  Magnets magnets(magnetInfo, args.draw);
 
   //figure 3.3 in ALICE ZDC TDR (which does not agree perfectly with the text: see dimensions in Chapters 3.4 and 3.5)
   //available on July 15th 2021 here: https://cds.cern.ch/record/381433/files/Alice-TDR.pdf
 
-  // std::vector<Calorimeters::Calorimeter> caloInfo{
-  //     {Calorimeters::Neutron, "NeutronZDC", kCyan-3, Geometry::Dimensions{-8/2., 8./2., -8/2., 8/2., -11613, -11613+100}},
-  //     {Calorimeters::Proton,  "ProtonZDC",  kCyan+3, Geometry::Dimensions{10.82, 10.82+22., -13./2., 13./2., -11563, -11563+150}}
-  // };
-  // Calorimeters calos(caloInfo);
-  // calos.draw();
+  std::vector<Calorimeters::Calorimeter> caloInfo{
+      {Calorimeters::Neutron, "NeutronZDC", kCyan-3, Geometry::Dimensions{-8/2., 8./2., -8/2., 8/2., -11613, -11613+100}},
+      {Calorimeters::Proton,  "ProtonZDC",  kCyan+3, Geometry::Dimensions{10.82, 10.82+22., -13./2., 13./2., -11563, -11563+150}}
+  };
+  Calorimeters calos(caloInfo, args.draw);
 
   constexpr float batchSize = 50.f; //each batch will hold 100 particles (positive z + negative z sides)
   const unsigned nbatches = ceil(args.nparticles/batchSize);
   unsigned batchSize_;
-  std::cout << "NBATCHES " << nbatches << std::endl;
+
   for(unsigned ibatch=0; ibatch<nbatches; ++ibatch)
     {
       batchSize_ = ibatch==nbatches-1 ? args.nparticles-ibatch*batchSize : batchSize;
@@ -142,12 +147,14 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	p2[i].charge = +1;
       }
 
-      // std::vector<TEveLine*> particleTrackViz1(batchSize_);
-      // std::vector<TEveLine*> particleTrackViz2(batchSize_);
-      // for(unsigned i=0; i<batchSize_; ++i) {
-      // 	particleTrackViz1[i] = new TEveLine();
-      // 	particleTrackViz2[i] = new TEveLine();
-      // }
+      std::vector<TEveLine*> particleTrackViz1(batchSize_);
+      std::vector<TEveLine*> particleTrackViz2(batchSize_);
+      if(args.draw) {
+	for(unsigned i=0; i<batchSize_; ++i) {
+	  particleTrackViz1[i] = new TEveLine();
+	  particleTrackViz2[i] = new TEveLine();
+	}
+      }
 
       //-------------------------------------------------------------------------------------------
       // Scanned sigma x (m) as a function of z (m) of the LHC beam  (John Jowett)
@@ -200,15 +207,17 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       file.open(filename, std::ios_base::out);
       for(unsigned i_step = 0; i_step<minelem; i_step++)
 	{
-	  // for(unsigned ix=0; ix<batchSize_; ix++) {
-	  //   particleTrackViz1[ix]->SetNextPoint(itPositions1[ix][i_step].X(),
-	  // 					itPositions1[ix][i_step].Y(),
-	  // 					itPositions1[ix][i_step].Z() );
+	  if(args.draw) {
+	    for(unsigned ix=0; ix<batchSize_; ix++) {
+	      particleTrackViz1[ix]->SetNextPoint(itPositions1[ix][i_step].X(),
+						  itPositions1[ix][i_step].Y(),
+						  itPositions1[ix][i_step].Z() );
 
-	  //   particleTrackViz2[ix]->SetNextPoint(itPositions2[ix][i_step].X(),
-	  // 					itPositions2[ix][i_step].Y(),
-	  // 					itPositions2[ix][i_step].Z() );
-	  // }
+	      particleTrackViz2[ix]->SetNextPoint(itPositions2[ix][i_step].X(),
+						  itPositions2[ix][i_step].Y(),
+						  itPositions2[ix][i_step].Z() );
+	    }
+	  }
   
 	  if (!file.is_open()) 
 	    std::cerr << "failed to open " << filename << '\n';
@@ -228,43 +237,45 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	}
       file.close();
 
-      // for(unsigned ix=0; ix<batchSize_; ix++) {
-      // 	histname1 = "track_zpos_ " + std::to_string(ix);
-      // 	particleTrackViz1[ix]->SetName( histname1.c_str() );
-      // 	particleTrackViz1[ix]->SetLineStyle(1);
-      // 	particleTrackViz1[ix]->SetLineWidth(2);
-      // 	particleTrackViz1[ix]->SetMainAlpha(0.7);
-      // 	particleTrackViz1[ix]->SetMainColor(kRed+3);
+      if(args.draw) {
+	for(unsigned ix=0; ix<batchSize_; ix++) {
+	  histname1 = "track_zpos_ " + std::to_string(ix);
+	  particleTrackViz1[ix]->SetName( histname1.c_str() );
+	  particleTrackViz1[ix]->SetLineStyle(1);
+	  particleTrackViz1[ix]->SetLineWidth(2);
+	  particleTrackViz1[ix]->SetMainAlpha(0.7);
+	  particleTrackViz1[ix]->SetMainColor(kRed+3);
 
-      // 	histname2 = "track_zneg_ " + std::to_string(ix);
-      // 	particleTrackViz2[ix]->SetName( histname2.c_str() );
-      // 	particleTrackViz2[ix]->SetLineStyle(1);
-      // 	particleTrackViz2[ix]->SetLineWidth(2);
-      // 	particleTrackViz2[ix]->SetMainAlpha(0.7);
-      // 	particleTrackViz2[ix]->SetMainColor(kRed-7);
-      // 	gEve->AddElement(particleTrackViz1[ix]);
-      // 	gEve->AddElement(particleTrackViz2[ix]);
-      // }
+	  histname2 = "track_zneg_ " + std::to_string(ix);
+	  particleTrackViz2[ix]->SetName( histname2.c_str() );
+	  particleTrackViz2[ix]->SetLineStyle(1);
+	  particleTrackViz2[ix]->SetLineWidth(2);
+	  particleTrackViz2[ix]->SetMainAlpha(0.7);
+	  particleTrackViz2[ix]->SetMainColor(kRed-7);
+	  gEve->AddElement(particleTrackViz1[ix]);
+	  gEve->AddElement(particleTrackViz2[ix]);
+	}
+      }
 
-      std::cout << "BATCH" << ", " << ibatch << std::endl;
     } // for ibatch
 
-  // gEve->Redraw3D(kTRUE);
+  if(args.draw)
+    gEve->Redraw3D(kTRUE);
 }
 
+// run example: ./v1_beam.exe --mode euler --x 0.01 --y 0.01 --energy 1380 --nparticles 1
 int main(int argc, char **argv) {
-  //TApplication myapp("myapp", &argc, argv);
-
+  TApplication myapp("myapp", &argc, argv);
+  
   tracking::TrackMode mode = tracking::TrackMode::Euler;
-  if(argc<2) {
-    std::cerr << "No arguments passed." << std::endl;
-    std::exit(0);
-  }
-
+  bool flag_draw = false;
+ 
   namespace po = boost::program_options;
   po::options_description desc("Options");
   desc.add_options()
+    ("help,h", "produce this help message")
     ("mode", po::value<std::string>()->default_value("euler"), "numerical solver")
+    ("draw", po::bool_switch(&flag_draw), "whether to draw the geometry with ROOT's Event Display")
     ("x", po::value<float>()->default_value(0.f), "initial beam x position")
     ("y", po::value<float>()->default_value(0.f), "initial beam y position")
     ("energy", po::value<float>()->default_value(1380.f), "beam energy position")
@@ -274,8 +285,9 @@ int main(int argc, char **argv) {
   po::store(po::parse_command_line(argc,argv,desc), vm);
   po::notify(vm);
 
-  if(vm.count("help")) {
+  if(vm.count("help") or argc<2) {
     std::cerr << desc << std::endl;
+    std::exit(0);
   }
       
   if(vm.count("mode")) {
@@ -302,15 +314,17 @@ int main(int argc, char **argv) {
   }
   std::cout << "--------------------------" << std::endl;
 
-  //run simulation
+  //run simulation   
   InputArgs info;
+  info.draw = flag_draw;
   info.x = boost::any_cast<float>(vm["x"].value());
   info.y = boost::any_cast<float>(vm["y"].value());
   info.energy = boost::any_cast<float>(vm["energy"].value());
   info.nparticles = boost::any_cast<unsigned>(vm["nparticles"].value());
   run(mode, info);
 
-  //myapp.Run();
+  if(flag_draw)
+    myapp.Run();
   
   return 0;
 }

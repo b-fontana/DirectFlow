@@ -40,10 +40,12 @@ public:
     pair mX, mY, mZ;
   };
 
-  Geometry() {
-    // TEveManager::Create();
-    // this->draw_beam_axis();
-    //this->draw_beams();
+  Geometry(bool draw) {
+    if(draw) {
+      TEveManager::Create();
+      this->draw_beam_axis();
+      //this->draw_beams();
+    }
   };
 
   //virtual void draw();
@@ -100,10 +102,13 @@ public:
     Geometry::Dimensions dims; //beginning and end coordinates (x, y and z) [cm]
   };
     
-  Magnets(const std::vector<Magnet>& pMagnetsInfo)
-    : Geometry(), mMagnetsInfo(pMagnetsInfo) {};
+  Magnets(const std::vector<Magnet>& pMagnetsInfo, bool draw)
+    : Geometry(draw), mMagnetsInfo(pMagnetsInfo) {
+    if(draw)
+      draw_();
+  };
   
-  void draw();
+  void draw_() const;
   XYZ field(XYZ, double) const;
 
 private:
@@ -126,10 +131,13 @@ public:
     Geometry::Dimensions dims; //beginning and end coordinates (x, y and z) [cm]
   };
     
-  Calorimeters(const std::vector<Calorimeter>& pCalosInfo)
-    : Geometry(), mCalosInfo(pCalosInfo) {};
+  Calorimeters(const std::vector<Calorimeter>& pCalosInfo, bool draw)
+    : Geometry(draw), mCalosInfo(pCalosInfo) {
+    if(draw)
+      draw_();
+  };
   
-  void draw() const;
+  void draw_() const;
 
 private:
   std::vector<Calorimeter> mCalosInfo;
