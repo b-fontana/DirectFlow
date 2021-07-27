@@ -118,7 +118,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   };
   Calorimeters calos(caloInfo, args.draw);
   
-  constexpr float batchSize = 50.f; //each batch will hold 100 particles (positive z + negative z sides)
+  constexpr float batchSize = 1000.f; //each batch will hold 100 particles (positive z + negative z sides)
   const unsigned nbatches = ceil(args.nparticles/batchSize);
   std::cout << " --- Simulation Informations --- " << std::endl;
   std::cout << "Batch Size: " << batchSize << " (last batch: " << size_last_batch(nbatches, args.nparticles, batchSize) << ")" << std::endl;
