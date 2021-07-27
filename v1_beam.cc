@@ -1,5 +1,6 @@
 #include "include/geometry.h"
 #include "include/tracking.h"
+#include "include/tqdm.h"
 
 #include <iostream>
 #include <vector>
@@ -24,25 +25,29 @@ public:
   float energy;
   unsigned nparticles;
 };
-  
+
+unsigned size_last_batch(unsigned nbatches, unsigned nelems, unsigned batchSize) {
+  return nelems-(nbatches-1)*batchSize;
+}
+
 void run(tracking::TrackMode mode, const InputArgs& args)
 {
   gRandom->SetSeed(0);
   gStyle->SetPalette(56); // 53 = black body radiation, 56 = inverted black body radiator, 103 = sunset, 87 == light temperature
 
   //set global parameters
-  std::fstream file;
+  std::fstream file, file2;
   std::string histname1, histname2;
   double Bscale = 1.;
-  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 13000, 13000 }};
-  std::array<double, tracking::TrackMode::NMODES> stepsize = {{ 1., 1. }};
+  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 15000, 13000 }};
+  std::array<double, tracking::TrackMode::NMODES> stepsize = {{ .1, 1. }};
   std::array<std::string, tracking::TrackMode::NMODES> suf = {{ "_euler", "_rk4" }};
     
   // generate random positions around input positions
   std::random_device seeder;
   std::mt19937 rng( seeder() );
   std::normal_distribution<double> xdist( args.x, 0.1 ); //beam width of 1 millimeter
-  std::normal_distribution<double> ydist( args.y, 0.1 );
+  std::normal_distribution<double> ydist( args.y, 0.1 ); //beam width of 1 millimeter
   
   // std::vector<Magnets::Magnet> magnetInfo{
   //    {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
@@ -101,46 +106,55 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   // 					    std::make_pair(particle.pos.Z()-1500, particle.pos.Z()+3000), 60., 60.},
   // };
 
-  std::vector<Magnets::Magnet> magnetInfo{
-					  {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,0.),
-					   Geometry::Dimensions{-10., 10., -10., 10., -5840.0-945.0, -5840.0}
-					  }
-  };
+  std::vector<Magnets::Magnet> magnetInfo{};
   Magnets magnets(magnetInfo, args.draw);
 
   //figure 3.3 in ALICE ZDC TDR (which does not agree perfectly with the text: see dimensions in Chapters 3.4 and 3.5)
   //available on July 15th 2021 here: https://cds.cern.ch/record/381433/files/Alice-TDR.pdf
 
   std::vector<Calorimeters::Calorimeter> caloInfo{
-      {Calorimeters::Neutron, "NeutronZDC", kCyan-3, Geometry::Dimensions{-8/2., 8./2., -8/2., 8/2., -11613, -11613+100}},
-      {Calorimeters::Proton,  "ProtonZDC",  kCyan+3, Geometry::Dimensions{10.82, 10.82+22., -13./2., 13./2., -11563, -11563+150}}
+      // {Calorimeters::Neutron, "NeutronZDC", kCyan-3, Geometry::Dimensions{-8/2., 8./2., -8/2., 8/2., -11613, -11613+100}},
+      // {Calorimeters::Proton,  "ProtonZDC",  kCyan+3, Geometry::Dimensions{10.82, 10.82+22., -13./2., 13./2., -11563, -11563+150}}
   };
   Calorimeters calos(caloInfo, args.draw);
-
+  
   constexpr float batchSize = 50.f; //each batch will hold 100 particles (positive z + negative z sides)
   const unsigned nbatches = ceil(args.nparticles/batchSize);
+  std::cout << " --- Simulation Informations --- " << std::endl;
+  std::cout << "Batch Size: " << batchSize << " (last batch: " << size_last_batch(nbatches, args.nparticles, batchSize) << ")" << std::endl;
+  std::cout << "Number of batches: " << nbatches << std::endl;
+  std::cout << "--------------------------" << std::endl;
   unsigned batchSize_;
 
-  for(unsigned ibatch=0; ibatch<nbatches; ++ibatch)
+  std::string roundx = std::to_string(args.x).substr(0,8);
+  std::string roundy = std::to_string(args.y).substr(0,8);
+  std::string rounden = std::to_string(args.energy).substr(0,10);
+  std::replace( roundx.begin(), roundx.end(), '.', 'p');
+  std::replace( roundy.begin(), roundy.end(), '.', 'p');
+  std::replace( rounden.begin(), rounden.end(), '.', 'p');
+  std::string str_initpos = "_" + roundx + "X_" + roundy + "Y_" + rounden + "En";
+
+  std::string filename("data/track" + suf[mode] + str_initpos + ".csv");
+  std::string filename2("data/histo" + suf[mode] + str_initpos + ".csv");
+  file2.open(filename2, std::ios_base::out);
+      
+  for (unsigned ibatch : tq::trange(nbatches))
+    //for(unsigned ibatch=0; ibatch<nbatches; ++ibatch)
     {
-      batchSize_ = ibatch==nbatches-1 ? args.nparticles-ibatch*batchSize : batchSize;
+      batchSize_ = ibatch==nbatches-1 ? size_last_batch(nbatches, args.nparticles, batchSize) : batchSize;
       
       //define the initial properties of the incident particle
       std::vector<Particle> p1(batchSize_);
       std::vector<Particle> p2(batchSize_);
       for(unsigned i=0; i<batchSize_; ++i) {
-	double thisx = xdist(rng);
-	double thisy = ydist(rng);
-	//std::cout << thisx << ", " << thisy << std::endl;
-
 	//negative z side
-	p1[i].pos = ROOT::Math::XYZVector( thisx, thisy, -7000.0 ); // cm
+	p1[i].pos = ROOT::Math::XYZVector( xdist(rng), ydist(rng), -500.0 ); // cm //-7000
 	p1[i].mom = ROOT::Math::XYZVector(0.0, 0.0, args.energy); // GeV/c
 	p1[i].mass = 0.938; // GeV/c^2
 	p1[i].energy = args.energy; //TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
 	p1[i].charge = +1;
 	//positive z side
-	p2[i].pos = ROOT::Math::XYZVector( thisx, thisy, 7000.0 ); // cm
+	p2[i].pos = ROOT::Math::XYZVector( xdist(rng), ydist(rng), 500.0 ); // cm //7000
 	p2[i].mom = ROOT::Math::XYZVector(0.0, 0.0, -args.energy); // GeV/c
 	p2[i].mass = 0.938; // GeV/c^2
 	p2[i].energy = args.energy;
@@ -180,6 +194,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       std::vector<std::vector<ROOT::Math::XYZVector>> itPositions1(batchSize_), itPositions2(batchSize_);
       std::vector<std::vector<ROOT::Math::XYZVector>> itMomenta1(batchSize_), itMomenta2(batchSize_);
       std::vector<unsigned> nStepsUsed1(batchSize_), nStepsUsed2(batchSize_);
+
       for(unsigned i=0; i<batchSize_; ++i) {
 	//negative z side
 	itEnergies1[i]  = tracks1[i]->energies();
@@ -192,16 +207,6 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	itMomenta2[i]   = tracks2[i]->momenta();
 	nStepsUsed2[i]  = tracks2[i]->steps_used();
       }
-
-      std::string roundx = std::to_string(args.x).substr(0,8);
-      std::string roundy = std::to_string(args.y).substr(0,8);
-      std::string rounden = std::to_string(p1[0].mom.Z()).substr(0,10);
-      std::replace( roundx.begin(), roundx.end(), '.', 'p');
-      std::replace( roundy.begin(), roundy.end(), '.', 'p');
-      std::replace( rounden.begin(), rounden.end(), '.', 'p');
-      std::string str_initpos = "_" + roundx + "X_" + roundy + "Y_" + rounden + "En";
-
-      std::string filename("data/track" + suf[mode] + str_initpos + ".csv");
 
       unsigned minelem = *std::min_element(std::begin(nStepsUsed1), std::end(nStepsUsed1));
       file.open(filename, std::ios_base::out);
@@ -234,9 +239,38 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 		 << std::to_string( itEnergies2[0][i_step] ) << ","
 		 << std::endl;
 	  }
+
 	}
       file.close();
 
+      for(unsigned ix=0; ix<batchSize_; ix++) {
+	bool origin_found = false;
+	for(unsigned i_step = 0; i_step<minelem; i_step++) {
+
+	  if( TMath::Sqrt( (itPositions1[ix][i_step]-itPositions2[ix][i_step]).Mag2() ) < .1 )
+	    {
+	      origin_found = true;
+	      if(ix==0 and ibatch==0)
+		file2 << "iBatch,Idx,mom1X,mom1Y,mom1Z,mom2X,mom2Y,mom2Z,sumMomX,sumMomY,sumMomZ" << std::endl;
+	      file2 << std::to_string( ibatch ) << ","
+		    << std::to_string( ix ) << ","
+		    << std::to_string( itMomenta1[ix][i_step].X() ) << ","
+		    << std::to_string( itMomenta1[ix][i_step].Y() ) << ","
+		    << std::to_string( itMomenta1[ix][i_step].Z() ) << ","
+		    << std::to_string( itMomenta2[ix][i_step].X() ) << ","
+		    << std::to_string( itMomenta2[ix][i_step].Y() ) << ","
+		    << std::to_string( itMomenta2[ix][i_step].Z() ) << ","
+		    << std::to_string( itMomenta1[ix][i_step].X() + itMomenta2[ix][i_step].X() ) << ","
+		    << std::to_string( itMomenta1[ix][i_step].Y() + itMomenta2[ix][i_step].Y() ) << ","
+		    << std::to_string( itMomenta1[ix][i_step].Z() + itMomenta2[ix][i_step].Z() )
+		    << std::endl;
+	      break; //only at most one output row per particle pair
+	    }
+	}
+	if(!origin_found)
+	  std::cout << "ERROR: Batch " << ibatch << " Idx " << ix << " no origin found." << std::endl;
+      }
+	    
       if(args.draw) {
 	for(unsigned ix=0; ix<batchSize_; ix++) {
 	  histname1 = "track_zpos_ " + std::to_string(ix);
@@ -259,6 +293,8 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 
     } // for ibatch
 
+  file2.close();
+  
   if(args.draw)
     gEve->Redraw3D(kTRUE);
 }
@@ -305,6 +341,10 @@ int main(int argc, char **argv) {
     auto& value = it.second.value();
     if (auto v = boost::any_cast<float>(&value))
       std::cout << *v << std::endl;
+    else if (auto v = boost::any_cast<bool>(&value)) {
+      std::string str_ = *v==1 ? "true" : "false";
+      std::cout << *v << std::endl;
+    }
     else if (auto v = boost::any_cast<std::string>(&value))
       std::cout << *v << std::endl;
     else if (auto v = boost::any_cast<unsigned>(&value))
@@ -312,7 +352,6 @@ int main(int argc, char **argv) {
     else
       std::cerr << "type missing" << std::endl;
   }
-  std::cout << "--------------------------" << std::endl;
 
   //run simulation   
   InputArgs info;
@@ -325,6 +364,7 @@ int main(int argc, char **argv) {
 
   if(flag_draw)
     myapp.Run();
-  
+
+  std::cout << std::endl;
   return 0;
 }

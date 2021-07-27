@@ -51,6 +51,9 @@ Track SimParticle::track_euler(const Magnets& magnets, double scale)
   momenta.reserve(mNsteps);
 
   unsigned nStepsUsed = 0;
+
+  bool deviation_done = false;
+  
   while(nStepsUsed<mNsteps)
     {
       positions.push_back( partPos);
@@ -67,8 +70,37 @@ Track SimParticle::track_euler(const Magnets& magnets, double scale)
 
       XYZ Bfield = magnets.field(partPosMid, scale);
 
-      if(Bfield.Mag2() == 0.0)
+      if(Bfield.Mag2() == 0.0) {
+	// partPos = partPosNext;
+	
+	// TEST FAKE DEFLECTION
+	float distCutoff = 50.f;
+	if( std::abs(partPos.Z()) < distCutoff and !deviation_done)
+	  {
+	    // float distToIP = std::sqrt( partPos.Mag2() ); //IP define to be at (0,0,0)
+	    // float angle = std::acos( distCutoff / disitToIP );
+	    XYZ vectorDir = -1 * partPos / TMath::Sqrt( partPos.Mag2() );
+	
+	    // F = (dp/dt)
+	    XYZ partMomNext = vectorDir * TMath::Sqrt( partMom.Mag2() );
+	  
+	    double mag0 = TMath::Sqrt(partMom.Mag2());
+	    double mag1 = TMath::Sqrt(partMomNext.Mag2());
+	    partMomNext *= mag0 / mag1; // make sure that total momentum doesn't change
+
+	    XYZ momDelta = partMomNext * ( mStepSize / mag1); // direction to move with magnetic field in cm
+	    //XYZ momDelta = partMomNext * mStepSize; // direction to move with magnetic field in cm
+	    partPos += momDelta; // new position after deltaT with magnetic field
+
+	    partMom = partMomNext;
+
+	    deviation_done = true;
+	  }
+	else
 	  partPos = partPosNext;
+	////////////////////////////////////////////////
+      }
+	  
       else
 	{
 	  // F = q*v X B

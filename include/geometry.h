@@ -55,8 +55,11 @@ private:
 
     TEveLine* TEveLine_beam_axis = NULL;
     TEveLine_beam_axis = new TEveLine();
-    TEveLine_beam_axis ->SetNextPoint(0.0,0.0,-6300-5840.);
+    // TEveLine_beam_axis ->SetNextPoint(0.0,0.0,-6300-5840.);
+    // TEveLine_beam_axis ->SetNextPoint(0.0,0.0,1000);
+    TEveLine_beam_axis ->SetNextPoint(0.0,0.0,-1000.);
     TEveLine_beam_axis ->SetNextPoint(0.0,0.0,1000);
+    
     TEveLine_beam_axis ->SetName("beam axis");
     TEveLine_beam_axis ->SetLineStyle(9);
     TEveLine_beam_axis ->SetLineWidth(1);

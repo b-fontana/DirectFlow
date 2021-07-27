@@ -4,6 +4,7 @@
 //#include "./functions.h"
 #include "./geometry.h"
 #include <memory>
+#include <cmath>
 
 #include "TROOT.h"
 #include "Math/Vector3D.h" // XYZVector
