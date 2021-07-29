@@ -1,6 +1,7 @@
 #include "include/geometry.h"
 #include "include/tracking.h"
 #include "include/tqdm.h"
+#include "include/utils.h"
 
 #include <iostream>
 #include <vector>
@@ -24,6 +25,7 @@ public:
   float y;
   float energy;
   unsigned nparticles;
+  float zcutoff;
 };
 
 unsigned size_last_batch(unsigned nbatches, unsigned nelems, unsigned batchSize) {
@@ -35,9 +37,12 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   gRandom->SetSeed(0);
   gStyle->SetPalette(56); // 53 = black body radiation, 56 = inverted black body radiator, 103 = sunset, 87 == light temperature
 
-  //set global parameters
+  //set global variables
   std::fstream file, file2;
   std::string histname1, histname2;
+
+  //set global parameters
+  float nominalAngle = calculate_acute_angle_to_beamline(args.x, args.y, args.zcutoff);  
   double Bscale = 1.;
   std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 15000, 13000 }};
   std::array<double, tracking::TrackMode::NMODES> stepsize = {{ .1, 1. }};
@@ -186,8 +191,8 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       std::vector<const Track*> tracks1(batchSize_);
       std::vector<const Track*> tracks2(batchSize_);
       for(unsigned i=0; i<batchSize_; ++i) {
-	tracks1[i] = &( simp1[i].track( magnets, mode, Bscale ));
-	tracks2[i] = &( simp2[i].track( magnets, mode, Bscale ));
+	tracks1[i] = &( simp1[i].track( magnets, mode, Bscale, args.zcutoff ));
+	tracks2[i] = &( simp2[i].track( magnets, mode, Bscale, args.zcutoff ));
       }
 
       std::vector< std::vector<double> > itEnergies1(batchSize_), itEnergies2(batchSize_);
@@ -195,21 +200,40 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       std::vector<std::vector<ROOT::Math::XYZVector>> itMomenta1(batchSize_), itMomenta2(batchSize_);
       std::vector<unsigned> nStepsUsed1(batchSize_), nStepsUsed2(batchSize_);
 
+      std::vector<float> angles1(batchSize_);
+      std::vector<float> angles2(batchSize_);
+      std::vector<float> psi_angles(batchSize_);
+      
       for(unsigned i=0; i<batchSize_; ++i) {
 	//negative z side
 	itEnergies1[i]  = tracks1[i]->energies();
 	itPositions1[i] = tracks1[i]->positions();
 	itMomenta1[i]   = tracks1[i]->momenta();
 	nStepsUsed1[i]  = tracks1[i]->steps_used();
+
 	//positive z side
 	itEnergies2[i]  = tracks2[i]->energies();
 	itPositions2[i] = tracks2[i]->positions();
 	itMomenta2[i]   = tracks2[i]->momenta();
 	nStepsUsed2[i]  = tracks2[i]->steps_used();
+
+	ROOT::Math::XYZVector last1_ = itPositions1[i].back();
+	float angle1_ = calculate_acute_angle_to_beamline(last1_.X(), last1_.Y(), last1_.Z());
+	angles1[i] = angle1_ - nominalAngle;
+	ROOT::Math::XYZVector last2_ = itPositions2[i].back();
+	float angle2_ = calculate_acute_angle_to_beamline(last2_.X(), last2_.Y(), last2_.Z());
+	angles2[i] = angle2_ - nominalAngle;
+	psi_angles[i] = ( std::abs(angles1[i]) + std::abs(angles2[i]) ) / 2;
+	std::cout << psi_angles[i] << std::endl;
       }
 
+
+
+
+
+      
+      
       unsigned minelem = *std::min_element(std::begin(nStepsUsed1), std::end(nStepsUsed1));
-      file.open(filename, std::ios_base::out);
       for(unsigned i_step = 0; i_step<minelem; i_step++)
 	{
 	  if(args.draw) {
@@ -223,7 +247,11 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 						  itPositions2[ix][i_step].Z() );
 	    }
 	  }
-  
+	}
+	  
+      file.open(filename, std::ios_base::out);
+      for(unsigned i_step = 0; i_step<minelem; i_step++)
+	{
 	  if (!file.is_open()) 
 	    std::cerr << "failed to open " << filename << '\n';
 	  else {
@@ -299,7 +327,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
     gEve->Redraw3D(kTRUE);
 }
 
-// run example: ./v1_beam.exe --mode euler --x 0.01 --y 0.01 --energy 1380 --nparticles 1
+// run example: ./v1_beam.exe --mode euler --x 0.08 --y 0.08 --energy 1380 --nparticles 1 --zcutoff 50.
 int main(int argc, char **argv) {
   TApplication myapp("myapp", &argc, argv);
   
@@ -315,7 +343,8 @@ int main(int argc, char **argv) {
     ("x", po::value<float>()->default_value(0.f), "initial beam x position")
     ("y", po::value<float>()->default_value(0.f), "initial beam y position")
     ("energy", po::value<float>()->default_value(1380.f), "beam energy position")
-    ("nparticles", po::value<unsigned>()->default_value(1), "number of particles to generate on each beam");
+    ("nparticles", po::value<unsigned>()->default_value(1), "number of particles to generate on each beam")
+    ("zcutoff", po::value<float>()->default_value(50.f), "cutoff at which to apply the fake deflection");
       
   po::variables_map vm;
   po::store(po::parse_command_line(argc,argv,desc), vm);
@@ -360,6 +389,7 @@ int main(int argc, char **argv) {
   info.y = boost::any_cast<float>(vm["y"].value());
   info.energy = boost::any_cast<float>(vm["energy"].value());
   info.nparticles = boost::any_cast<unsigned>(vm["nparticles"].value());
+  info.zcutoff = boost::any_cast<float>(vm["zcutoff"].value());
   run(mode, info);
 
   if(flag_draw)

@@ -73,7 +73,7 @@ public:
       mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES, false),
       mNsteps(pNsteps), mStepSize(pStepSize) {};
 
-  const Track& track(const Magnets&, tracking::TrackMode, double) &;
+  const Track& track(const Magnets&, tracking::TrackMode, double, float) &;
   //no copies of big objects, so forbid calling 'track()' on a temporary object
   Track track(const Magnets&, tracking::TrackMode, double) && = delete;
     
@@ -89,7 +89,7 @@ private:
 
   XYZ calc_relativistic_velocity(const XYZ&, double, double) const;
   XYZ calc_lorentz_force(double, const XYZ&, const XYZ&) const;
-  Track track_euler( const Magnets&, double );
+  Track track_euler( const Magnets&, double, float );
   Track track_rungekutta4( const Magnets&, double );
 };
 

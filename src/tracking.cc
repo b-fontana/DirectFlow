@@ -8,12 +8,12 @@ SimParticle::XYZ SimParticle::calc_lorentz_force(double charge, const XYZ& vel, 
   return charge*vel.Cross(b); // (A*s)*(cm/s)*(kg/(A*s*s)) = (cm*kg)/(s*s)
 }
 
-const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode, double scale ) & {
+const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode, double scale, float zcutoff ) & {
   using m = tracking::TrackMode;
   
   if(mode == m::Euler) { 
     if(mTrackCheck[m::Euler] == false) {
-      mTracks[m::Euler] = track_euler(magnets, scale);
+      mTracks[m::Euler] = track_euler(magnets, scale, zcutoff);
       mTrackCheck[m::Euler] = true;
     }
   }
@@ -31,7 +31,7 @@ const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode
   return mTracks[mode];
 }
 
-Track SimParticle::track_euler(const Magnets& magnets, double scale)
+Track SimParticle::track_euler(const Magnets& magnets, double scale, float zcutoff)
 { 
   double charge = mParticle.charge * mEcharge; // C = A*s
 
@@ -73,9 +73,8 @@ Track SimParticle::track_euler(const Magnets& magnets, double scale)
       if(Bfield.Mag2() == 0.0) {
 	// partPos = partPosNext;
 	
-	// TEST FAKE DEFLECTION
-	float distCutoff = 50.f;
-	if( std::abs(partPos.Z()) < distCutoff and !deviation_done)
+	//FAKE DEFLECTION, FAKE FORCE
+	if( std::abs(partPos.Z()) < zcutoff and !deviation_done)
 	  {
 	    // float distToIP = std::sqrt( partPos.Mag2() ); //IP define to be at (0,0,0)
 	    // float angle = std::acos( distCutoff / disitToIP );
