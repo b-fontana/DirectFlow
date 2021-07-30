@@ -13,9 +13,10 @@ def run(FLAGS):
     ##########################################################
     ######## Constants #######################################
     ##########################################################
-    NFIGS=6
-    FIGDIMS = 600, 600
-    STEPS = FIGDIMS[0]/100, FIGDIMS[1]/100, 
+    NFIGS=7
+    FIGDIMS1 = 600, 600
+    FIGDIMS2 = 1200, 800
+    STEPS = FIGDIMS1[0]/100, FIGDIMS1[1]/100, 
 
     BASE = os.environ['PWD']
     HTML_NAME = os.path.join(BASE, os.path.basename(__file__)[:-3] + '_' + \
@@ -39,20 +40,28 @@ def run(FLAGS):
         print('Data: ', l[0])
     
     df = pd.read_csv( l[0] )
-    df['sumMomXAbs'] = np.abs(df.sumMomX)
-    df['sumMomYAbs'] = np.abs(df.sumMomY)
+    # df['sumMomXAbs'] = np.abs(df.sumMomX)
+    # df['sumMomYAbs'] = np.abs(df.sumMomY)
+    df['sumMomXAbs'] = df.sumMomX
+    df['sumMomYAbs'] = df.sumMomY
     ##########################################################
     ######## Plotting ########################################
     ##########################################################
 
+    figwidths = [FIGDIMS1[0] for _ in range(NFIGS-1)]
+    figwidths.extend([FIGDIMS2[0]])
+    figheights = [FIGDIMS1[0] for _ in range(NFIGS-1)]
+    figheights.extend([FIGDIMS2[1]])
+    
     b = bkp.BokehPlot( HTML_NAME, nfigs=NFIGS, nwidgets=0,
-                       fig_width=FIGDIMS[0], fig_height=FIGDIMS[1])
+                       fig_width=figwidths,
+                       fig_height=figheights )
 
     additional_kwargs = {'text_font_size': '9pt', 'text_font_style': 'italic',
                          'x_units': 'screen', 'y_units': 'screen',
                          'angle': np.pi/2}
-    dlabel = dict(x=FIGDIMS[0]/2+3*STEPS[0],
-                  y=FIGDIMS[1]-32*STEPS[1], **additional_kwargs)
+    dlabel = dict(x=FIGDIMS1[0]/2+3*STEPS[0],
+                  y=FIGDIMS1[1]-32*STEPS[1], **additional_kwargs)
 
     figkw = {'y.axis_label': 'Counts'}
     figkw.update({'x.axis_label': 'X momentum sum [GeV]'})
@@ -66,38 +75,48 @@ def run(FLAGS):
             color='orange', fig_kwargs=figkw)
 
     
-    dlatex = dict(x=FIGDIMS[0]/2+9.5*STEPS[0],
-                  y=FIGDIMS[1]-10*STEPS[1],
+    dlatex = dict(x=FIGDIMS1[0]/2+3.*STEPS[0],
+                  y=FIGDIMS1[1]-10*STEPS[1],
                   x_units="screen",
                   y_units="screen",
                   text_font_size='10pt')
     latex1 = LatexLabel(
-        text="x_{{init}} = {}, y_{{init}} = {}".format(round(FLAGS.x,5), round(FLAGS.y,5)),
+        text="x_{{init}} = {}cm, y_{{init}} = {}cm".format(round(FLAGS.x,5),round(FLAGS.y,5)),
         render_mode="css",
         background_fill_alpha=0,
         **dlatex
     )
-    for i in range(3):
+    for i in range(NFIGS-1):
         b.get_figure(i).add_layout(latex1)
 
-        
-    figkw.update({'x.axis_label': 'Psi angle'})
+    psistr = '\u03A8'
+    phistr = '\u03D5'
+    pistr = '\u03C0'
+    figkw.update({'x.axis_label': psistr + '=' + psistr + 'A +' + psistr + 'B +' + pistr +  ' [rad]'})
     b.histogram(idx=3, data=np.histogram(df.Psi, bins=100),
                 color='purple', fig_kwargs=figkw)
 
-    figkw.update({'x.axis_label': 'Phi angle'})
+    figkw.update({'x.axis_label': phistr + ' [rad]'})
     b.histogram(idx=4, data=np.histogram(df.Phi, bins=100),
                 color='purple', fig_kwargs=figkw)
 
-    figkw.update({'x.axis_label': 'Cos(Phi+Psi)'})
+    figkw.update({'x.axis_label': 'Cos(' + phistr + '+' + psistr + ') [rad]'})
     b.histogram(idx=5, data=np.histogram(np.cos(df.Psi+df.Phi), bins=100),
                 color='purple', fig_kwargs=figkw)
+
+
+    figkw.update({'x.axis_label': psistr + 'A + ' + pistr + ' [rad]',
+                  'y.axis_label': psistr + 'B [rad]'})
+    b.histogram(idx=6, data=np.histogram2d(df.PsiA+np.pi, df.PsiB, bins=50),
+                style='quad%Viridis',
+                fig_kwargs=figkw)
 
 
     ##########################################################
     ######## Saving ##########################################
     ##########################################################
-    b.save_frame(nrows=2, ncols=3, show=True)
+    #b.save_frame(nrows=3, ncols=3, show=True)
+    b.save_frame(layout=[[0,1,2],[6],[3,4,5]], show=True)
     #b.save_figs(path='.', mode='png')
 
 if __name__ == '__main__':

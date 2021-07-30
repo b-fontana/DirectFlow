@@ -52,59 +52,59 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   NormalDistribution<double> xdist(args.x, 0.1); //beam width of 1 millimeter
   NormalDistribution<double> ydist(args.y, 0.1); //beam width of 1 millimeter
   BoltzmannDistribution<float> boltzdist(1.f, 0.15, 4, 0.138);
-  boltzdist.test("data/boltz.csv");
+  //boltzdist.test("data/boltz.csv");
   UniformDistribution<float> phidist(0, 2*M_PI);
   UniformDistribution<float> etadist(-2.f, 2.f);
   
-  // std::vector<Magnets::Magnet> magnetInfo{
-  //    {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
-  //     Geometry::Dimensions{-10., 10., -10., 10., -5840.0-945.0, -5840.0}
-  //    },
+  std::vector<Magnets::Magnet> magnetInfo{
+     {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
+      Geometry::Dimensions{-10., 10., -10., 10., -5840.0-945.0, -5840.0}
+     },
      
-  //    {Magnets::Quadrupole, "Q4_neg", kYellow,  std::make_pair(200.34,-200.34),
-  //     Geometry::Dimensions{-10., 10., -10., 10., -4730.0-630.0, -4730.0}
-  //    },
+     {Magnets::Quadrupole, "Q4_neg", kYellow,  std::make_pair(200.34,-200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., -4730.0-630.0, -4730.0}
+     },
      
-  //    {Magnets::Quadrupole, "Q3_neg", kYellow,  std::make_pair(-200.34,200.34),
-  //     Geometry::Dimensions{-10., 10., -10., 10., -3830.0-550.0, -3830.0}
-  //    },
+     {Magnets::Quadrupole, "Q3_neg", kYellow,  std::make_pair(-200.34,200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., -3830.0-550.0, -3830.0}
+     },
      
-  //    {Magnets::Quadrupole, "Q2_neg", kYellow,  std::make_pair(-200.34,200.34),
-  //     Geometry::Dimensions{-10., 10., -10., 10., -3180.0-550.0, -3180.0}
-  //    },
+     {Magnets::Quadrupole, "Q2_neg", kYellow,  std::make_pair(-200.34,200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., -3180.0-550.0, -3180.0}
+     },
      
-  //    {Magnets::Quadrupole, "Q1_neg", kYellow,  std::make_pair(200.34,-200.34),
-  //     Geometry::Dimensions{-10., 10., -10., 10., -2300.0-630.0, -2300.0}
-  //    },
+     {Magnets::Quadrupole, "Q1_neg", kYellow,  std::make_pair(200.34,-200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., -2300.0-630.0, -2300.0}
+     },
       
-  //    {Magnets::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.),
-  //     Geometry::Dimensions{-10., 10., -10., 10., -1920.0-190.0, -1920.0}
-  //    },
+     {Magnets::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.),
+      Geometry::Dimensions{-10., 10., -10., 10., -1920.0-190.0, -1920.0}
+     },
       
-  //    {Magnets::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),
-  //     Geometry::Dimensions{-10., 10., -10., 10., -750.0-430.0,  -750.0}
-  //    },
+     {Magnets::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),
+      Geometry::Dimensions{-10., 10., -10., 10., -750.0-430.0,  -750.0}
+     },
       
-  //    {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
-  //     Geometry::Dimensions{-10., 10., -10., 10., 2300.0, 2300.0+630.0}
-  //    },
+     {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., 2300.0, 2300.0+630.0}
+     },
       
-  //    {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34),
-  //     Geometry::Dimensions{-10., 10., -10., 10., 3180.0, 3180.0+550.0}
-  //    },
+     {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., 3180.0, 3180.0+550.0}
+     },
       
-  //    {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34),
-  //     Geometry::Dimensions{-10., 10., -10., 10., 3830.0, 3830.0+550.0}
-  //    },
+     {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., 3830.0, 3830.0+550.0}
+     },
       
-  //    {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34),
-  //     Geometry::Dimensions{-10., 10., -10., 10., 4730.0, 4730.0+630.0}
-  //    },
+     {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34),
+      Geometry::Dimensions{-10., 10., -10., 10., 4730.0, 4730.0+630.0}
+     },
       
-  //    {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529),
-  //     Geometry::Dimensions{-10., 10., -10., 10., 5840.0, 5840.0+945.0}
-  //    }
-  // };
+     {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529),
+      Geometry::Dimensions{-10., 10., -10., 10., 5840.0, 5840.0+945.0}
+     }
+  };
 
   // std::vector<Magnets::Magnet> magnetInfo{ {Magnets::DipoleY,
   // 					    "D1_neg",
@@ -113,7 +113,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   // 					    std::make_pair(particle.pos.Z()-1500, particle.pos.Z()+3000), 60., 60.},
   // };
 
-  std::vector<Magnets::Magnet> magnetInfo{};
+  //std::vector<Magnets::Magnet> magnetInfo{};
   Magnets magnets(magnetInfo, args.draw);
 
   //figure 3.3 in ALICE ZDC TDR (which does not agree perfectly with the text: see dimensions in Chapters 3.4 and 3.5)
@@ -204,6 +204,8 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       std::vector<std::vector<ROOT::Math::XYZVector>> itMomenta1(batchSize_), itMomenta2(batchSize_);
       std::vector<unsigned> nStepsUsed1(batchSize_), nStepsUsed2(batchSize_);
 
+      std::vector<float> psi1(batchSize_);
+      std::vector<float> psi2(batchSize_);
       std::vector<float> psi_angles(batchSize_);
       
       for(unsigned i=0; i<batchSize_; ++i) {
@@ -222,10 +224,10 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	ROOT::Math::XYZVector last1_ = itPositions1[i].back();
 	ROOT::Math::XYZVector last2_ = itPositions2[i].back();
 	float angle1_ = calculate_acute_angle_to_beamline(last1_.X(), last1_.Y(), last1_.Z());
-	angle1_ -= nominalAngle;
+	psi1[i] = angle1_ - nominalAngle;
 	float angle2_ = calculate_acute_angle_to_beamline(last2_.X(), last2_.Y(), last2_.Z());
-	angle2_ -= nominalAngle;
-	psi_angles[i] = ( std::abs(angle1_) + std::abs(angle2_) ) / 2;
+	psi2[i] = angle2_ - nominalAngle;
+	psi_angles[i] = ( psi1[i] + psi2[i] + M_PI ) / 2;
       }
 
 
@@ -275,11 +277,17 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	    {
 	      origin_found = true;
 	      if(ix==0 and ibatch==0)
-		file2 << "iBatch,Idx,mom1X,mom1Y,mom1Z,mom2X,mom2Y,mom2Z,sumMomX,sumMomY,sumMomZ,Psi,Phi" << std::endl;
+		file2 << "iBatch,Idx,mom1X,mom1Y,mom1Z,mom2X,mom2Y,mom2Z,sumMomX,sumMomY,sumMomZ,PsiA,PsiB,Psi,Phi" << std::endl;
 
 	      float mom1X=itMomenta1[ix][i_step].X(), mom2X=itMomenta2[ix][i_step].X();
 	      float mom1Y=itMomenta1[ix][i_step].Y(), mom2Y=itMomenta2[ix][i_step].Y();
 	      float mom1Z=itMomenta1[ix][i_step].Z(), mom2Z=itMomenta2[ix][i_step].Z();
+	      // std::cout << "px=" << mom1X << ", py=" << mom1Y << ", pz=" << mom1Z << std::endl;
+	      // std::cout << "px=" << mom2X << ", py=" << mom2Y << ", pz=" << mom2Z << std::endl;
+	      // std::cout << "x1=" << itPositions1[ix][i_step].X() << ", y1=" << itPositions1[ix][i_step].Y() << ", z1=" << itPositions1[ix][i_step].Z() << std::endl;
+	      // std::cout << "x2=" << itPositions2[ix][i_step].X() << ", y2=" << itPositions2[ix][i_step].Y() << ", z2=" << itPositions2[ix][i_step].Z() << std::endl;
+	      // std::cout << TMath::Sqrt( (itPositions1[ix][i_step]-itPositions2[ix][i_step]).Mag2()) << std::endl;
+	      // std::cout << "---" << std::endl;
 	      float momXSum = mom1X + mom2X;
 	      float momYSum = mom1Y + mom2Y;
 	      float momZSum = mom1Z + mom2Z;
@@ -287,7 +295,8 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	      ROOT::Math::PtEtaPhiMVector boltzPT(boltzdist.generate(),
 						  etadist.generate(), phidist.generate(),
 						  args.mass);
-	      ROOT::Math::PxPyPzEVector kickPT(momXSum/200.f, momYSum/200.f, momZSum/200.f, args.mass);
+	      float nNucleons = 200.f;
+	      ROOT::Math::PxPyPzEVector kickPT(momXSum/nNucleons, momYSum/nNucleons, momZSum/nNucleons, args.mass);
 	      ROOT::Math::PtEtaPhiMVector totalPT = boltzPT + kickPT;
 		
 	      file2 << std::to_string( ibatch ) << ","
@@ -301,8 +310,10 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 		    << std::to_string( momXSum ) << ","
 		    << std::to_string( momYSum ) << ","
 		    << std::to_string( momZSum ) << ","
+		    << std::to_string( psi1[ix] ) << ","
+		    << std::to_string( psi2[ix] ) << ","
 		    << std::to_string( psi_angles[ix] ) << ","
-		    << std::to_string( totalPT.Phi()-boltzPT.Phi() )
+		    << std::to_string( totalPT.Phi() )
 		    << std::endl;
 								
 	      break; //only at most one output row per particle pair
