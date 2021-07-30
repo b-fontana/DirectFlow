@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Momenta Histograms"
-date:   2021-07-27 17:23:00 +0200
+date:   2021-07-30 17:57:00 +0200
 categories: plots
 ---
 
@@ -16,7 +16,7 @@ Within each batch, pairs of protons are constructed, where each proton in a pair
 - Mean Y beam position: 0.8cm
 - Gaussian width: 0.1cm
 - Energy: 1380GeV
-- Number of particle pairs: 100K
+- Number of particle pairs: 10K
 - Distance at which the deviation is applied: 50m
 
 
