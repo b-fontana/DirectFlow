@@ -13,7 +13,7 @@ def run(FLAGS):
     ##########################################################
     ######## Constants #######################################
     ##########################################################
-    NFIGS=3
+    NFIGS=6
     FIGDIMS = 600, 600
     STEPS = FIGDIMS[0]/100, FIGDIMS[1]/100, 
 
@@ -56,13 +56,13 @@ def run(FLAGS):
 
     figkw = {'y.axis_label': 'Counts'}
     figkw.update({'x.axis_label': 'X momentum sum [GeV]'})
-    b.histogram(idx=0, data=np.histogram(df.sumMomXAbs, bins=100), style='v%0.8%red',
+    b.histogram(idx=0, data=np.histogram(df.sumMomXAbs, bins=100),
             color='orange', fig_kwargs=figkw)
     figkw.update({'x.axis_label': 'Y momentum sum [GeV]'})
-    b.histogram(idx=1, data=np.histogram(df.sumMomYAbs, bins=100), style='v%0.8%green',
+    b.histogram(idx=1, data=np.histogram(df.sumMomYAbs, bins=100),
             color='orange', fig_kwargs=figkw)
     figkw.update({'x.axis_label': 'Z momentum sum [GeV]'})
-    b.histogram(idx=2, data=np.histogram(df.sumMomZ, bins=100), style='o%0.8%purple',
+    b.histogram(idx=2, data=np.histogram(df.sumMomZ, bins=100),
             color='orange', fig_kwargs=figkw)
 
     
@@ -77,13 +77,27 @@ def run(FLAGS):
         background_fill_alpha=0,
         **dlatex
     )
-    for i in range(NFIGS):
+    for i in range(3):
         b.get_figure(i).add_layout(latex1)
-    
+
+        
+    figkw.update({'x.axis_label': 'Psi angle'})
+    b.histogram(idx=3, data=np.histogram(df.Psi, bins=100),
+                color='purple', fig_kwargs=figkw)
+
+    figkw.update({'x.axis_label': 'Phi angle'})
+    b.histogram(idx=4, data=np.histogram(df.Phi, bins=100),
+                color='purple', fig_kwargs=figkw)
+
+    figkw.update({'x.axis_label': 'Cos(Phi+Psi)'})
+    b.histogram(idx=5, data=np.histogram(np.cos(df.Psi+df.Phi), bins=100),
+                color='purple', fig_kwargs=figkw)
+
+
     ##########################################################
     ######## Saving ##########################################
     ##########################################################
-    b.save_frame(show=True)
+    b.save_frame(nrows=2, ncols=3, show=True)
     #b.save_figs(path='.', mode='png')
 
 if __name__ == '__main__':

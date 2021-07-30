@@ -1,11 +1,11 @@
 #include "include/geometry.h"
 #include "include/tracking.h"
+#include "include/generator.h"
 #include "include/tqdm.h"
 #include "include/utils.h"
 
 #include <iostream>
 #include <vector>
-#include <random>
 #include <fstream>
 #include <boost/program_options.hpp>
 
@@ -24,6 +24,7 @@ public:
   float x;
   float y;
   float energy;
+  float mass;
   unsigned nparticles;
   float zcutoff;
 };
@@ -34,7 +35,6 @@ unsigned size_last_batch(unsigned nbatches, unsigned nelems, unsigned batchSize)
 
 void run(tracking::TrackMode mode, const InputArgs& args)
 {
-  gRandom->SetSeed(0);
   gStyle->SetPalette(56); // 53 = black body radiation, 56 = inverted black body radiator, 103 = sunset, 87 == light temperature
 
   //set global variables
@@ -49,10 +49,12 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   std::array<std::string, tracking::TrackMode::NMODES> suf = {{ "_euler", "_rk4" }};
     
   // generate random positions around input positions
-  std::random_device seeder;
-  std::mt19937 rng( seeder() );
-  std::normal_distribution<double> xdist( args.x, 0.1 ); //beam width of 1 millimeter
-  std::normal_distribution<double> ydist( args.y, 0.1 ); //beam width of 1 millimeter
+  NormalDistribution<double> xdist(args.x, 0.1); //beam width of 1 millimeter
+  NormalDistribution<double> ydist(args.y, 0.1); //beam width of 1 millimeter
+  BoltzmannDistribution<float> boltzdist(1.f, 0.15, 4, 0.138);
+  boltzdist.test("data/boltz.csv");
+  UniformDistribution<float> phidist(0, 2*M_PI);
+  UniformDistribution<float> etadist(-2.f, 2.f);
   
   // std::vector<Magnets::Magnet> magnetInfo{
   //    {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
@@ -153,15 +155,17 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       std::vector<Particle> p2(batchSize_);
       for(unsigned i=0; i<batchSize_; ++i) {
 	//negative z side
-	p1[i].pos = ROOT::Math::XYZVector( xdist(rng), ydist(rng), -500.0 ); // cm //-7000
+	p1[i].pos = ROOT::Math::XYZVector( xdist.generate(),
+					   ydist.generate(), -500.0 ); // cm //-7000
 	p1[i].mom = ROOT::Math::XYZVector(0.0, 0.0, args.energy); // GeV/c
-	p1[i].mass = 0.938; // GeV/c^2
+	p1[i].mass = args.mass; // GeV/c^2
 	p1[i].energy = args.energy; //TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
 	p1[i].charge = +1;
 	//positive z side
-	p2[i].pos = ROOT::Math::XYZVector( xdist(rng), ydist(rng), 500.0 ); // cm //7000
+	p2[i].pos = ROOT::Math::XYZVector( xdist.generate(),
+					   ydist.generate(), 500.0 ); // cm //7000
 	p2[i].mom = ROOT::Math::XYZVector(0.0, 0.0, -args.energy); // GeV/c
-	p2[i].mass = 0.938; // GeV/c^2
+	p2[i].mass = args.mass; // GeV/c^2
 	p2[i].energy = args.energy;
 	p2[i].charge = +1;
       }
@@ -200,8 +204,6 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       std::vector<std::vector<ROOT::Math::XYZVector>> itMomenta1(batchSize_), itMomenta2(batchSize_);
       std::vector<unsigned> nStepsUsed1(batchSize_), nStepsUsed2(batchSize_);
 
-      std::vector<float> angles1(batchSize_);
-      std::vector<float> angles2(batchSize_);
       std::vector<float> psi_angles(batchSize_);
       
       for(unsigned i=0; i<batchSize_; ++i) {
@@ -218,21 +220,15 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	nStepsUsed2[i]  = tracks2[i]->steps_used();
 
 	ROOT::Math::XYZVector last1_ = itPositions1[i].back();
-	float angle1_ = calculate_acute_angle_to_beamline(last1_.X(), last1_.Y(), last1_.Z());
-	angles1[i] = angle1_ - nominalAngle;
 	ROOT::Math::XYZVector last2_ = itPositions2[i].back();
+	float angle1_ = calculate_acute_angle_to_beamline(last1_.X(), last1_.Y(), last1_.Z());
+	angle1_ -= nominalAngle;
 	float angle2_ = calculate_acute_angle_to_beamline(last2_.X(), last2_.Y(), last2_.Z());
-	angles2[i] = angle2_ - nominalAngle;
-	psi_angles[i] = ( std::abs(angles1[i]) + std::abs(angles2[i]) ) / 2;
-	std::cout << psi_angles[i] << std::endl;
+	angle2_ -= nominalAngle;
+	psi_angles[i] = ( std::abs(angle1_) + std::abs(angle2_) ) / 2;
       }
 
 
-
-
-
-      
-      
       unsigned minelem = *std::min_element(std::begin(nStepsUsed1), std::end(nStepsUsed1));
       for(unsigned i_step = 0; i_step<minelem; i_step++)
 	{
@@ -279,19 +275,36 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	    {
 	      origin_found = true;
 	      if(ix==0 and ibatch==0)
-		file2 << "iBatch,Idx,mom1X,mom1Y,mom1Z,mom2X,mom2Y,mom2Z,sumMomX,sumMomY,sumMomZ" << std::endl;
+		file2 << "iBatch,Idx,mom1X,mom1Y,mom1Z,mom2X,mom2Y,mom2Z,sumMomX,sumMomY,sumMomZ,Psi,Phi" << std::endl;
+
+	      float mom1X=itMomenta1[ix][i_step].X(), mom2X=itMomenta2[ix][i_step].X();
+	      float mom1Y=itMomenta1[ix][i_step].Y(), mom2Y=itMomenta2[ix][i_step].Y();
+	      float mom1Z=itMomenta1[ix][i_step].Z(), mom2Z=itMomenta2[ix][i_step].Z();
+	      float momXSum = mom1X + mom2X;
+	      float momYSum = mom1Y + mom2Y;
+	      float momZSum = mom1Z + mom2Z;
+
+	      ROOT::Math::PtEtaPhiMVector boltzPT(boltzdist.generate(),
+						  etadist.generate(), phidist.generate(),
+						  args.mass);
+	      ROOT::Math::PxPyPzEVector kickPT(momXSum/200.f, momYSum/200.f, momZSum/200.f, args.mass);
+	      ROOT::Math::PtEtaPhiMVector totalPT = boltzPT + kickPT;
+		
 	      file2 << std::to_string( ibatch ) << ","
 		    << std::to_string( ix ) << ","
-		    << std::to_string( itMomenta1[ix][i_step].X() ) << ","
-		    << std::to_string( itMomenta1[ix][i_step].Y() ) << ","
-		    << std::to_string( itMomenta1[ix][i_step].Z() ) << ","
-		    << std::to_string( itMomenta2[ix][i_step].X() ) << ","
-		    << std::to_string( itMomenta2[ix][i_step].Y() ) << ","
-		    << std::to_string( itMomenta2[ix][i_step].Z() ) << ","
-		    << std::to_string( itMomenta1[ix][i_step].X() + itMomenta2[ix][i_step].X() ) << ","
-		    << std::to_string( itMomenta1[ix][i_step].Y() + itMomenta2[ix][i_step].Y() ) << ","
-		    << std::to_string( itMomenta1[ix][i_step].Z() + itMomenta2[ix][i_step].Z() )
+		    << std::to_string( mom1X ) << ","
+		    << std::to_string( mom1Y ) << ","
+		    << std::to_string( mom1Z ) << ","
+		    << std::to_string( mom2X ) << ","
+		    << std::to_string( mom2Y ) << ","
+		    << std::to_string( mom2Z ) << ","
+		    << std::to_string( momXSum ) << ","
+		    << std::to_string( momYSum ) << ","
+		    << std::to_string( momZSum ) << ","
+		    << std::to_string( psi_angles[ix] ) << ","
+		    << std::to_string( totalPT.Phi()-boltzPT.Phi() )
 		    << std::endl;
+								
 	      break; //only at most one output row per particle pair
 	    }
 	}
@@ -388,6 +401,7 @@ int main(int argc, char **argv) {
   info.x = boost::any_cast<float>(vm["x"].value());
   info.y = boost::any_cast<float>(vm["y"].value());
   info.energy = boost::any_cast<float>(vm["energy"].value());
+  info.mass = 0.938; //GeV
   info.nparticles = boost::any_cast<unsigned>(vm["nparticles"].value());
   info.zcutoff = boost::any_cast<float>(vm["zcutoff"].value());
   run(mode, info);
