@@ -35,6 +35,7 @@ unsigned size_last_batch(unsigned nbatches, unsigned nelems, unsigned batchSize)
 
 void run(tracking::TrackMode mode, const InputArgs& args)
 {
+  using XYZ = ROOT::Math::XYZVector;
   gStyle->SetPalette(56); // 53 = black body radiation, 56 = inverted black body radiator, 103 = sunset, 87 == light temperature
 
   //set global variables
@@ -42,7 +43,11 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   std::string histname1, histname2;
 
   //set global parameters
-  float nominalAngle = calculate_acute_angle_to_beamline(args.x, args.y, args.zcutoff);  
+  XYZ line_perp_plane1(args.x, args.y, -args.zcutoff);
+  XYZ line_perp_plane2(args.x, args.y, args.zcutoff);
+  XYZ origin(0.f, 0.f, 0.f);
+  std::pair<float,float> nomAngles = calculate_angles_to_beamline(args.x,
+								      args.y, args.zcutoff);  
   double Bscale = 1.;
   std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 15000, 13000 }};
   std::array<double, tracking::TrackMode::NMODES> stepsize = {{ .1, 1. }};
@@ -155,16 +160,16 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       std::vector<Particle> p2(batchSize_);
       for(unsigned i=0; i<batchSize_; ++i) {
 	//negative z side
-	p1[i].pos = ROOT::Math::XYZVector( xdist.generate(),
+	p1[i].pos = XYZ( xdist.generate(),
 					   ydist.generate(), -500.0 ); // cm //-7000
-	p1[i].mom = ROOT::Math::XYZVector(0.0, 0.0, args.energy); // GeV/c
+	p1[i].mom = XYZ(0.0, 0.0, args.energy); // GeV/c
 	p1[i].mass = args.mass; // GeV/c^2
 	p1[i].energy = args.energy; //TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
 	p1[i].charge = +1;
 	//positive z side
-	p2[i].pos = ROOT::Math::XYZVector( xdist.generate(),
+	p2[i].pos = XYZ( xdist.generate(),
 					   ydist.generate(), 500.0 ); // cm //7000
-	p2[i].mom = ROOT::Math::XYZVector(0.0, 0.0, -args.energy); // GeV/c
+	p2[i].mom = XYZ(0.0, 0.0, -args.energy); // GeV/c
 	p2[i].mass = args.mass; // GeV/c^2
 	p2[i].energy = args.energy;
 	p2[i].charge = +1;
@@ -200,8 +205,8 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       }
 
       std::vector< std::vector<double> > itEnergies1(batchSize_), itEnergies2(batchSize_);
-      std::vector<std::vector<ROOT::Math::XYZVector>> itPositions1(batchSize_), itPositions2(batchSize_);
-      std::vector<std::vector<ROOT::Math::XYZVector>> itMomenta1(batchSize_), itMomenta2(batchSize_);
+      std::vector<std::vector<XYZ>> itPositions1(batchSize_), itPositions2(batchSize_);
+      std::vector<std::vector<XYZ>> itMomenta1(batchSize_), itMomenta2(batchSize_);
       std::vector<unsigned> nStepsUsed1(batchSize_), nStepsUsed2(batchSize_);
 
       std::vector<float> psi1(batchSize_);
@@ -221,12 +226,37 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	itMomenta2[i]   = tracks2[i]->momenta();
 	nStepsUsed2[i]  = tracks2[i]->steps_used();
 
-	ROOT::Math::XYZVector last1_ = itPositions1[i].back();
-	ROOT::Math::XYZVector last2_ = itPositions2[i].back();
-	float angle1_ = calculate_acute_angle_to_beamline(last1_.X(), last1_.Y(), last1_.Z());
-	psi1[i] = angle1_ - nominalAngle;
-	float angle2_ = calculate_acute_angle_to_beamline(last2_.X(), last2_.Y(), last2_.Z());
-	psi2[i] = angle2_ - nominalAngle;
+	XYZ last1_ = itPositions1[i].back();
+	XYZ last2_ = itPositions2[i].back();
+
+	//calculate intersection between particle trajectory and plane
+	XYZ is1 = intersect_plane_with_line(line_perp_plane1, origin,
+					    origin, last1_, last1_);
+	XYZ is2 = intersect_plane_with_line(line_perp_plane2, origin,
+					    origin, last2_, last2_);
+
+	//calculate intersection between beam line and plane
+	XYZ is1_origin = intersect_plane_with_line(line_perp_plane1, origin,
+						   line_perp_plane1, origin,
+						   last1_);
+	XYZ is2_origin = intersect_plane_with_line(line_perp_plane2, origin,
+						   line_perp_plane2, origin,
+						   last2_);
+
+	//cordinate transformation
+	is1 = rotate_coordinates(is1, nomAngles.first, nomAngles.second);
+	is2 = rotate_coordinates(is2, nomAngles.first, nomAngles.second);
+	is1_origin = rotate_coordinates(is1_origin, nomAngles.first, nomAngles.second);
+	is2_origin = rotate_coordinates(is2_origin, nomAngles.first, nomAngles.second);
+
+	//cordinate translation
+	is1 = translate_coordinates(is1, is1_origin);
+	is2 = translate_coordinates(is2, is2_origin);
+
+	//psi angles do not depend on Z
+	psi1[i] = std::atan( is1.Y() / is1.X() );
+	psi2[i] = std::atan( is2.Y() / is2.X() );
+
 	psi_angles[i] = ( psi1[i] + psi2[i] + M_PI ) / 2;
       }
 
@@ -415,6 +445,8 @@ int main(int argc, char **argv) {
   info.mass = 0.938; //GeV
   info.nparticles = boost::any_cast<unsigned>(vm["nparticles"].value());
   info.zcutoff = boost::any_cast<float>(vm["zcutoff"].value());
+  assert(info.zcutoff > 0);
+  
   run(mode, info);
 
   if(flag_draw)

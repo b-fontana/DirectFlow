@@ -13,9 +13,9 @@ def run(FLAGS):
     ##########################################################
     ######## Constants #######################################
     ##########################################################
-    NFIGS=7
+    NFIGS=9
     FIGDIMS1 = 600, 600
-    FIGDIMS2 = 1200, 800
+    FIGDIMS2 = 800, 700
     STEPS = FIGDIMS1[0]/100, FIGDIMS1[1]/100, 
 
     BASE = os.environ['PWD']
@@ -105,9 +105,17 @@ def run(FLAGS):
                 color='purple', fig_kwargs=figkw)
 
 
+    #psiA and psiB
+    figkw.update({'x.axis_label': psistr + 'A [rad]'})
+    b.histogram(idx=6, data=np.histogram(df.PsiA, bins=100),
+                color='red', fig_kwargs=figkw)
+    figkw.update({'x.axis_label': psistr + 'B [rad]'})
+    b.histogram(idx=7, data=np.histogram(df.PsiB, bins=100),
+                color='red', fig_kwargs=figkw)
+
     figkw.update({'x.axis_label': psistr + 'A + ' + pistr + ' [rad]',
                   'y.axis_label': psistr + 'B [rad]'})
-    b.histogram(idx=6, data=np.histogram2d(df.PsiA+np.pi, df.PsiB, bins=50),
+    b.histogram(idx=8, data=np.histogram2d(df.PsiA+np.pi, df.PsiB, bins=50),
                 style='quad%Viridis',
                 fig_kwargs=figkw)
 
@@ -116,7 +124,7 @@ def run(FLAGS):
     ######## Saving ##########################################
     ##########################################################
     #b.save_frame(nrows=3, ncols=3, show=True)
-    b.save_frame(layout=[[0,1,2],[6],[3,4,5]], show=True)
+    b.save_frame(layout=[[0,1,2],[8,6,7],[3,4,5]], show=True)
     #b.save_figs(path='.', mode='png')
 
 if __name__ == '__main__':

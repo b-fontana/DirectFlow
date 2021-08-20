@@ -28,13 +28,15 @@ make clean
 #### Running
 
 ```
-./v1_beam.exe --mode euler
+./v1_beam.exe --mode euler --x 0.8 --y 0.8 --energy 1380 --nparticles 10000 --zcutoff 50.
 ```
 
 **Arguments**
 
 - ```mode```: numerical differential equation solver [euler/rk4]
-
+- ```x``` and ```y```: initial x and y coordinates relative to the beamline
+- ```energy```: energy of the incident particles in GeV
+- ```zcutoff```: distance at which the deviation is applied, in cm, from both sides.
 
 #### Plotting
 
