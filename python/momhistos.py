@@ -8,6 +8,7 @@ import argparse
 
 from latex import LatexLabel
 from bokeh.layouts import gridplot
+from bokeh.embed import components
     
 def run(FLAGS):
     ##########################################################
@@ -119,13 +120,17 @@ def run(FLAGS):
                 style='quad%Viridis',
                 fig_kwargs=figkw)
 
-
     ##########################################################
     ######## Saving ##########################################
     ##########################################################
     #b.save_frame(nrows=3, ncols=3, show=True)
     b.save_frame(layout=[[0,1,2],[8,6,7],[3,4,5]], show=True)
     #b.save_figs(path='.', mode='png')
+
+    script, div = components( b.get_figure(8) )
+    with open('histos.html', 'a') as f:
+        f.write(script)
+        
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
