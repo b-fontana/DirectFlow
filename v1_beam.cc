@@ -33,7 +33,7 @@ public:
 };
 
 void print_pos(std::string intro, ROOT::Math::XYZVector p) {
-  //std::cout << intro << ": x=" << p.X() << ", y=" << p.Y() << ", z=" << p.Z() << std::endl;
+  std::cout << intro << ": x=" << p.X() << ", y=" << p.Y() << ", z=" << p.Z() << std::endl;
 }
 
 unsigned size_last_batch(unsigned nbatches, unsigned nelems, unsigned batchSize) {
@@ -166,12 +166,14 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       for(unsigned i=0; i<batchSize_; ++i) {
 	//negative z side
 	p1[i].pos = XYZ( xdist.generate(), ydist.generate(), -500.0 ); // cm //-7000
+	//p1[i].pos = XYZ( args.x+0.01, args.y+0.01, -500.0 ); // cm //-7000
 	p1[i].mom = XYZ(0.0, 0.0, args.energy); // GeV/c
 	p1[i].mass = args.mass; // GeV/c^2
 	p1[i].energy = args.energy; //TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
 	p1[i].charge = +1;
 	//positive z side
 	p2[i].pos = XYZ( xdist.generate(), ydist.generate(), 500.0 ); // cm //7000
+	//p2[i].pos = XYZ( args.x+0.01, args.y+0.01, -500.0 ); // cm //-7000
 	p2[i].mom = XYZ(0.0, 0.0, -args.energy); // GeV/c
 	p2[i].mass = args.mass; // GeV/c^2
 	p2[i].energy = args.energy;
@@ -225,18 +227,12 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 
 	XYZ last1_ = itPositions1[i].back();
 	XYZ last2_ = itPositions2[i].back();
-
-	print_pos("last_position1", last1_);
-	print_pos("last_position2", last2_);
 	
 	//calculate intersection between particle trajectory and plane
 	XYZ is1 = intersect_plane_with_line(line_perp_plane1, origin,
 					    origin, last1_, last1_);
 	XYZ is2 = intersect_plane_with_line(line_perp_plane2, origin,
 					    origin, last2_, last2_);
-
-	print_pos("intersection1", is1);
-	print_pos("intersection2", is2);
 	
 	//calculate intersection between beam line and plane
 	XYZ is1_origin = intersect_plane_with_line(line_perp_plane1, origin,
@@ -245,9 +241,6 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	XYZ is2_origin = intersect_plane_with_line(line_perp_plane2, origin,
 						   line_perp_plane2, origin,
 						   last2_);
-
-	print_pos("intersection1_origin", is1_origin);
-	print_pos("intersection2_origin", is2_origin);
 	
 	//cordinate transformation	
 	is1 = rotate_coordinates(is1, nomAngles.first, nomAngles.second);
@@ -255,25 +248,19 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 
 	is1_origin = rotate_coordinates(is1_origin, nomAngles.first, nomAngles.second);
 	is2_origin = rotate_coordinates(is2_origin, -1*(nomAngles.first), -1*(nomAngles.second));
-
-	print_pos("intersection1_rot", is1);
-	print_pos("intersection2_rot", is2);
-
-	print_pos("intersection1_origin_rot", is1_origin);
-	print_pos("intersection2_origin_rot", is2_origin);
 	
 	//cordinate translation
 	is1 = translate_coordinates(is1, is1_origin);
 	is2 = translate_coordinates(is2, is2_origin);
-
-	print_pos("intersection1_translated", is1);
-	print_pos("intersection2_translated", is2);
 	
 	//psi angles do not depend on Z
-	psi1[i] = std::atan( is1.Y() / is1.X() );
-	psi2[i] = std::atan( is2.Y() / is2.X() );
+	psi1[i] = std::atan2( is1.Y(), is1.X() ) + M_PI;
+	psi2[i] = std::atan2( is2.Y(), is2.X() ) + M_PI;
 
-	psi_angles[i] = ( psi1[i] + psi2[i] + M_PI ) / 2;
+	float psi2_tmp = psi2[i]+M_PI>2*M_PI ? psi2[i]-M_PI : psi2[i]+M_PI;
+	  
+	psi_angles[i] = psi2_tmp>=psi1[i] ? psi2_tmp - psi1[i] : 2*M_PI-(psi1[i]-psi2_tmp);
+	psi_angles[i] /= 2.;
       }
 
 
