@@ -93,7 +93,7 @@ def run(FLAGS):
     psistr = '\u03A8'
     phistr = '\u03D5'
     pistr = '\u03C0'
-    figkw.update({'x.axis_label': 'Angle between ' + psistr + 'A and ' + psistr + 'B +' + pistr + ' [rad]'})
+    figkw.update({'x.axis_label': psistr + ': Angle between ' + psistr + 'A and ' + psistr + 'B +' + pistr + ' [rad]'})
     b.histogram(idx=3, data=np.histogram(df.Psi, bins=100),
                 color='purple', fig_kwargs=figkw)
 
@@ -101,8 +101,8 @@ def run(FLAGS):
     b.histogram(idx=4, data=np.histogram(df.Phi, bins=100),
                 color='purple', fig_kwargs=figkw)
 
-    figkw.update({'x.axis_label': 'Cos(' + phistr + '+' + psistr + ') [rad]'})
-    b.histogram(idx=5, data=np.histogram(np.cos(df.Psi+df.Phi), bins=100),
+    figkw.update({'x.axis_label': 'Cos(' + phistr + '-' + psistr + ') [rad]'})
+    b.histogram(idx=5, data=np.histogram(df.Cos, bins=100),
                 color='purple', fig_kwargs=figkw)
 
 

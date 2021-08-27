@@ -1,10 +1,18 @@
+#ifndef UTILS_H
+#define UTILS_H
+
 #include <cmath>
 #include <utility>
 #include "Math/Vector3D.h" // XYZVector
 
 using XYZ = ROOT::Math::XYZVector;
 
-std::pair<float,float> calculate_angles_to_beamline(float x, float y, float z) {
+template<class T>
+inline void print_pos(std::string intro, T p) {
+  std::cout << intro << ": x=" << p.X() << ", y=" << p.Y() << ", z=" << p.Z() << std::endl;
+}
+
+inline std::pair<float,float> calculate_angles_to_beamline(float x, float y, float z) {
   /*
     Simple trigonometric relationship.
     Calculates the angle between: 
@@ -21,7 +29,16 @@ std::pair<float,float> calculate_angles_to_beamline(float x, float y, float z) {
   return p;
 }
 
-XYZ rotate_coordinates(XYZ p, float theta, float phi) {
+inline float distance_two_angles(float a1, float a2) {
+  /*calculates the angle ("distance") between two angles,
+    avoiding the boundary condition issues (the sum of two uniform
+    distributions is a triangular distribution). 
+    It is assumed that the angles lie between 0 and 2*pi.
+  */
+  return a2>=a1 ? a2 - a1 : 2*M_PI-(a1-a2);
+}
+
+inline XYZ rotate_coordinates(XYZ p, float theta, float phi) {
   using namespace std;
   XYZ res( cos(phi)*p.X() + sin(phi)*p.Z(),
 	   sin(theta)*sin(phi)*p.X() + cos(theta)*p.Y() - sin(theta)*cos(phi)*p.Z(),
@@ -29,18 +46,19 @@ XYZ rotate_coordinates(XYZ p, float theta, float phi) {
   return res;
 }
 
-/*
-Translate point 'p' relative to a new origin 'origin'.
-Translating a point by itself returns (0,0,0), i.e., it is the origin.
-*/
-XYZ translate_coordinates(XYZ p, XYZ origin) {
+inline XYZ translate_coordinates(XYZ p, XYZ origin) {
+  /*
+    Translate point 'p' relative to a new origin 'origin'.
+    Translating a point by itself returns (0,0,0), i.e., it is the origin.
+  */
+
   XYZ res( p.X() - origin.X(),
 	   p.Y() - origin.Y(),
 	   p.Z() - origin.Z() );
   return res;
 }
 
-XYZ intersect_plane_with_line(XYZ genpoint1, XYZ genpoint2,
+inline XYZ intersect_plane_with_line(XYZ genpoint1, XYZ genpoint2,
 			      XYZ intersectpoint1, XYZ intersectpoint2,
 			      XYZ planepoint) {
   /*Calculate the intersection between a line, generated from 'intersectpoint1'
@@ -64,7 +82,7 @@ XYZ intersect_plane_with_line(XYZ genpoint1, XYZ genpoint2,
   return intersection;
 }
 
-float get_y_in_line(float x, float x1, float y1, float x2, float y2) {
+inline float get_y_in_line(float x, float x1, float y1, float x2, float y2) {
   /*
     Calculates the y coordinate of a point in a line defined by two points,
     given the x coordinate.
@@ -72,3 +90,5 @@ float get_y_in_line(float x, float x1, float y1, float x2, float y2) {
   float slope = std::abs(y2-y1) / std::abs(x2-x1);
   return slope*(x-x1) + y1;
 }
+
+#endif //UTILS_H

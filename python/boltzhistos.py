@@ -3,6 +3,7 @@ import glob
 import pandas as pd
 import numpy as np
 import bokehplot as bkp
+from bokeh.models import Range1d
 import argparser
 import argparse
 
@@ -50,9 +51,10 @@ def run(FLAGS):
                   y=FIGDIMS[1]-32*STEPS[1], **additional_kwargs)
 
     figkw = {'y.axis_label': 'Counts'}
-    figkw.update({'x.axis_label': 'pT [GeV]'})
-    b.histogram(idx=0, data=np.histogram(df.data, bins=100),
-            color='blue', fig_kwargs=figkw)
+    figkw.update({'x.axis_label': 'pT [GeV]',
+                  'x_range': Range1d(0,10)})
+    b.histogram(idx=0, data=np.histogram(df.data[df.data<20], bins=100),
+                color='blue', fig_kwargs=figkw)
     
     
     ##########################################################

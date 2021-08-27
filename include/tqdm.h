@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TQDM_H
+#define TQDM_H
 
 /*
  *Copyright (c) 2018-2019 <Miguel Raggi> <mraggi@gmail.com>
@@ -575,3 +576,5 @@ auto tqdm(timer t)
 }
 
 } // namespace tq
+
+#endif //TQDM_H
