@@ -131,8 +131,10 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   };
   CaloSystem calos(caloInfo);
 
-  BuildGeom(Dimensions{0., 0., 0., 0., -12000., 12000.},
-	    magnets, calos);
+  if(args.draw) {
+    BuildGeom(Dimensions{0., 0., 0., 0., -12000., 12000.}, //beamline coordinates
+	      magnets, calos);
+  }
   
   constexpr float batchSize = 1000.f;
   const unsigned nbatches = ceil(args.nparticles/batchSize);
@@ -375,7 +377,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
     } // for ibatch
 
   file2.close();
-  
+
   if(args.draw)
     gEve->Redraw3D(kTRUE);
 }
