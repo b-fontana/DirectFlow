@@ -32,10 +32,6 @@ public:
   float zcutoff;
 };
 
-void print_pos(std::string intro, ROOT::Math::XYZVector p) {
-  std::cout << intro << ": x=" << p.X() << ", y=" << p.Y() << ", z=" << p.Z() << std::endl;
-}
-
 unsigned size_last_batch(unsigned nbatches, unsigned nelems, unsigned batchSize) {
   return nelems-(nbatches-1)*batchSize;
 }
@@ -55,63 +51,63 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   double Bscale = 1.;
   XYZ origin(0.f, 0.f, 0.f);
   std::pair<float,float> nomAngles = calculate_angles_to_beamline(args.x, args.y, args.zcutoff);
-  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 15000, 13000 }};
-  std::array<double, tracking::TrackMode::NMODES> stepsize = {{ .1, 1. }};
+  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{ 30000, 13000 }};
+  std::array<double, tracking::TrackMode::NMODES> stepsize = {{ .5, 1. }};
   std::array<std::string, tracking::TrackMode::NMODES> suf = {{ "_euler", "_rk4" }};
     
   //generate random positions around input positions
   NormalDistribution<double> xdist(args.x, 0.1); //beam width of 1 millimeter
   NormalDistribution<double> ydist(args.y, 0.1); //beam width of 1 millimeter
   BoltzmannDistribution<float> boltzdist(1.f, 0.15, 4, 0.138);  //boltzdist.test("data/boltz.csv");
-  UniformDistribution<float> phidist(0, 2*M_PI);
+  UniformDistribution<float> phidist(-M_PI, M_PI);
   UniformDistribution<float> etadist(-2.f, 2.f);
   
-  Vec<Magnets::Magnet> magnetInfo{
-     // {Magnets::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
+  Vec<Magnet> magnetInfo{
+     // {Magnet::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
      //  Geometry::Dimensions{-10., 10., -10., 10., -5840.0-945.0, -5840.0}
      // },
      
-     // {Magnets::Quadrupole, "Q4_neg", kYellow,  std::make_pair(200.34,-200.34),
+     // {Magnet::Quadrupole, "Q4_neg", kYellow,  std::make_pair(200.34,-200.34),
      //  Geometry::Dimensions{-10., 10., -10., 10., -4730.0-630.0, -4730.0}
      // },
      
-     // {Magnets::Quadrupole, "Q3_neg", kYellow,  std::make_pair(-200.34,200.34),
+     // {Magnet::Quadrupole, "Q3_neg", kYellow,  std::make_pair(-200.34,200.34),
      //  Geometry::Dimensions{-10., 10., -10., 10., -3830.0-550.0, -3830.0}
      // },
      
-     // {Magnets::Quadrupole, "Q2_neg", kYellow,  std::make_pair(-200.34,200.34),
+     // {Magnet::Quadrupole, "Q2_neg", kYellow,  std::make_pair(-200.34,200.34),
      //  Geometry::Dimensions{-10., 10., -10., 10., -3180.0-550.0, -3180.0}
      // },
      
-     // {Magnets::Quadrupole, "Q1_neg", kYellow,  std::make_pair(200.34,-200.34),
+     // {Magnet::Quadrupole, "Q1_neg", kYellow,  std::make_pair(200.34,-200.34),
      //  Geometry::Dimensions{-10., 10., -10., 10., -2300.0-630.0, -2300.0}
      // },
       
-     // {Magnets::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.),
+     // {Magnet::DipoleX,    "D_corr", kBlue+1,  std::make_pair(-1.1716,0.),
      //  Geometry::Dimensions{-10., 10., -10., 10., -1920.0-190.0, -1920.0}
      // },
       
-     // {Magnets::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),
+     // {Magnet::DipoleX,    "Muon"  , kMagenta, std::make_pair(0.67,0.),
      //  Geometry::Dimensions{-10., 10., -10., 10., -750.0-430.0,  -750.0}
      // },
       
-     // {Magnets::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
+     // {Magnet::Quadrupole, "Q1_pos", kYellow,  std::make_pair(200.34,-200.34),
      //  Geometry::Dimensions{-10., 10., -10., 10., 2300.0, 2300.0+630.0}
      // },
       
-     // {Magnets::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34),
+     // {Magnet::Quadrupole, "Q2_pos", kYellow,  std::make_pair(-200.34,200.34),
      //  Geometry::Dimensions{-10., 10., -10., 10., 3180.0, 3180.0+550.0}
      // },
       
-     // {Magnets::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34),
+     // {Magnet::Quadrupole, "Q3_pos", kYellow,  std::make_pair(-200.34,200.34),
      //  Geometry::Dimensions{-10., 10., -10., 10., 3830.0, 3830.0+550.0}
      // },
       
-     // {Magnets::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34),
+     // {Magnet::Quadrupole, "Q4_pos", kYellow,  std::make_pair(200.34,-200.34),
      //  Geometry::Dimensions{-10., 10., -10., 10., 4730.0, 4730.0+630.0}
      // },
       
-     // {Magnets::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529),
+     // {Magnet::DipoleY,    "D1_pos", kBlue,    std::make_pair(0.,-3.529),
      //  Geometry::Dimensions{-10., 10., -10., 10., 5840.0, 5840.0+945.0}
      // }
   };
@@ -124,16 +120,19 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   // };
 
   //Vec<Magnets::Magnet> magnetInfo{};
-  Magnets magnets(magnetInfo, args.draw);
+  MagnetSystem magnets(magnetInfo);
 
   //figure 3.3 in ALICE ZDC TDR (which does not agree perfectly with the text: see dimensions in Chapters 3.4 and 3.5)
   //available on July 15th 2021 here: https://cds.cern.ch/record/381433/files/Alice-TDR.pdf
 
-  Vec<Calorimeters::Calorimeter> caloInfo{
-      // {Calorimeters::Neutron, "NeutronZDC", kCyan-3, Geometry::Dimensions{-8/2., 8./2., -8/2., 8/2., -11613, -11613+100}},
-      // {Calorimeters::Proton,  "ProtonZDC",  kCyan+3, Geometry::Dimensions{10.82, 10.82+22., -13./2., 13./2., -11563, -11563+150}}
+  Vec<Calo> caloInfo{
+      {Calo::Neutron, "NeutronZDC", kCyan-3, Dimensions{-8/2., 8./2., -8/2., 8/2., -11613, -11613+100}},
+      {Calo::Proton,  "ProtonZDC",  kCyan+3, Dimensions{10.82, 10.82+22., -13./2., 13./2., -11563, -11563+150}}
   };
-  Calorimeters calos(caloInfo, args.draw);
+  CaloSystem calos(caloInfo);
+
+  BuildGeom(Dimensions{0., 0., 0., 0., -12000., 12000.},
+	    magnets, calos);
   
   constexpr float batchSize = 1000.f;
   const unsigned nbatches = ceil(args.nparticles/batchSize);
@@ -165,15 +164,13 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       Vec<Particle> p2(batchSize_);
       for(unsigned i=0; i<batchSize_; ++i) {
 	//negative z side
-	p1[i].pos = XYZ( xdist.generate(), ydist.generate(), -500.0 ); // cm //-7000
-	//p1[i].pos = XYZ( args.x+0.01, args.y+0.01, -500.0 ); // cm //-7000
+	p1[i].pos = XYZ( xdist.generate(), ydist.generate(), -9999.0 ); // cm //-7000
 	p1[i].mom = XYZ(0.0, 0.0, args.energy); // GeV/c
 	p1[i].mass = args.mass; // GeV/c^2
 	p1[i].energy = args.energy; //TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
 	p1[i].charge = +1;
 	//positive z side
-	p2[i].pos = XYZ( xdist.generate(), ydist.generate(), 500.0 ); // cm //7000
-	//p2[i].pos = XYZ( args.x+0.01, args.y+0.01, -500.0 ); // cm //-7000
+	p2[i].pos = XYZ( xdist.generate(), ydist.generate(), 9999.0 ); // cm //7000
 	p2[i].mom = XYZ(0.0, 0.0, -args.energy); // GeV/c
 	p2[i].mass = args.mass; // GeV/c^2
 	p2[i].energy = args.energy;
@@ -211,6 +208,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       Vec<float> psi1(batchSize_);
       Vec<float> psi2(batchSize_);
       Vec<float> psi_angles(batchSize_);
+      Vec<float> corr(batchSize_);
       
       for(unsigned i=0; i<batchSize_; ++i) {
 	//negative z side
@@ -227,12 +225,18 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 
 	XYZ last1_ = itPositions1[i].back();
 	XYZ last2_ = itPositions2[i].back();
+
+	// XYZ point_check(0., 0., 1.);
 	
 	//calculate intersection between particle trajectory and plane
 	XYZ is1 = intersect_plane_with_line(line_perp_plane1, origin,
 					    origin, last1_, last1_);
 	XYZ is2 = intersect_plane_with_line(line_perp_plane2, origin,
 					    origin, last2_, last2_);
+	// XYZ is1_check = intersect_plane_with_line(point_check, origin,
+	// 					  origin, last1_, last1_);
+	// XYZ is2_check = intersect_plane_with_line(point_check, origin,
+	// 					  origin, last2_, last2_);
 	
 	//calculate intersection between beam line and plane
 	XYZ is1_origin = intersect_plane_with_line(line_perp_plane1, origin,
@@ -256,13 +260,11 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	//psi angles do not depend on Z
 	psi1[i] = std::atan2( is1.Y(), is1.X() ) + M_PI;
 	psi2[i] = std::atan2( is2.Y(), is2.X() ) + M_PI;
-
+	
 	float psi2_tmp = psi2[i]+M_PI>2*M_PI ? psi2[i]-M_PI : psi2[i]+M_PI;
-	  
-	psi_angles[i] = psi2_tmp>=psi1[i] ? psi2_tmp - psi1[i] : 2*M_PI-(psi1[i]-psi2_tmp);
+	psi_angles[i] = distance_two_angles(psi1[i], psi2_tmp);
 	psi_angles[i] /= 2.;
       }
-
 
       unsigned minelem = *std::min_element(std::begin(nStepsUsed1), std::end(nStepsUsed1));
       for(unsigned i_step = 0; i_step<minelem; i_step++)
@@ -310,43 +312,37 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	    {
 	      origin_found = true;
 	      if(ix==0 and ibatch==0)
-		file2 << "iBatch,Idx,mom1X,mom1Y,mom1Z,mom2X,mom2Y,mom2Z,sumMomX,sumMomY,sumMomZ,PsiA,PsiB,Psi,Phi" << std::endl;
+		file2 << "iBatch,Idx,sumMomX,sumMomY,sumMomZ,PsiA,PsiB,Psi,Phi,Cos" << std::endl;
 
-	      float mom1X=itMomenta1[ix][i_step].X(), mom2X=itMomenta2[ix][i_step].X();
-	      float mom1Y=itMomenta1[ix][i_step].Y(), mom2Y=itMomenta2[ix][i_step].Y();
-	      float mom1Z=itMomenta1[ix][i_step].Z(), mom2Z=itMomenta2[ix][i_step].Z();
-	      // std::cout << "px=" << mom1X << ", py=" << mom1Y << ", pz=" << mom1Z << std::endl;
-	      // std::cout << "px=" << mom2X << ", py=" << mom2Y << ", pz=" << mom2Z << std::endl;
-	      // std::cout << "x1=" << itPositions1[ix][i_step].X() << ", y1=" << itPositions1[ix][i_step].Y() << ", z1=" << itPositions1[ix][i_step].Z() << std::endl;
-	      // std::cout << "x2=" << itPositions2[ix][i_step].X() << ", y2=" << itPositions2[ix][i_step].Y() << ", z2=" << itPositions2[ix][i_step].Z() << std::endl;
-	      // std::cout << TMath::Sqrt( (itPositions1[ix][i_step]-itPositions2[ix][i_step]).Mag2()) << std::endl;
-	      // std::cout << "---" << std::endl;
-	      float momXSum = mom1X + mom2X;
-	      float momYSum = mom1Y + mom2Y;
-	      float momZSum = mom1Z + mom2Z;
+	      XYZ momSum = itMomenta1[ix][i_step] + itMomenta2[ix][i_step];
 
 	      ROOT::Math::PtEtaPhiMVector boltzPT(boltzdist.generate(),
 						  etadist.generate(), phidist.generate(),
 						  args.mass);
+
 	      float nNucleons = 200.f;
-	      ROOT::Math::PxPyPzEVector kickPT(momXSum/nNucleons, momYSum/nNucleons, momZSum/nNucleons, args.mass);
+	      ROOT::Math::PxPyPzEVector kickPT(momSum.X()/nNucleons,
+	      				       momSum.Y()/nNucleons,
+	      				       momSum.Z()/nNucleons,
+	      				       args.mass);
 	      ROOT::Math::PtEtaPhiMVector totalPT = boltzPT + kickPT;
+
+	      float totalPhi = totalPT.Phi();
+	      if(totalPhi<0)
+		totalPhi = 2*M_PI + totalPhi; //convert from [-Pi;Pi[ to [0;2Pi[
 		
+	      corr[ix] = std::cos( distance_two_angles(totalPhi, psi_angles[ix]) );
+	      
 	      file2 << std::to_string( ibatch ) << ","
 		    << std::to_string( ix ) << ","
-		    << std::to_string( mom1X ) << ","
-		    << std::to_string( mom1Y ) << ","
-		    << std::to_string( mom1Z ) << ","
-		    << std::to_string( mom2X ) << ","
-		    << std::to_string( mom2Y ) << ","
-		    << std::to_string( mom2Z ) << ","
-		    << std::to_string( momXSum ) << ","
-		    << std::to_string( momYSum ) << ","
-		    << std::to_string( momZSum ) << ","
+		    << std::to_string( momSum.X() ) << ","
+		    << std::to_string( momSum.Y() ) << ","
+		    << std::to_string( momSum.Z() ) << ","
 		    << std::to_string( psi1[ix] ) << ","
 		    << std::to_string( psi2[ix] ) << ","
 		    << std::to_string( psi_angles[ix] ) << ","
-		    << std::to_string( totalPT.Phi() )
+		    << std::to_string( totalPhi ) << ","
+		    << std::to_string( corr[ix] ) 
 		    << std::endl;
 								
 	      break; //only at most one output row per particle pair
@@ -384,7 +380,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
     gEve->Redraw3D(kTRUE);
 }
 
-// run example: ./v1_beam.exe --mode euler --x 0.08 --y 0.08 --energy 1380 --nparticles 1 --zcutoff 50.
+// run example: ./v1_beam.exe --mode euler --x 0.08 --y 0.08 --energy 1380 --nparticles 1 --zcutoff 5000.
 int main(int argc, char **argv) {
   TApplication myapp("myapp", &argc, argv);
   
@@ -401,7 +397,7 @@ int main(int argc, char **argv) {
     ("y", po::value<float>()->default_value(0.f), "initial beam y position")
     ("energy", po::value<float>()->default_value(1380.f), "beam energy position")
     ("nparticles", po::value<unsigned>()->default_value(1), "number of particles to generate on each beam")
-    ("zcutoff", po::value<float>()->default_value(50.f), "cutoff at which to apply the fake deflection");
+    ("zcutoff", po::value<float>()->default_value(5000.f), "cutoff at which to apply the fake deflection");
       
   po::variables_map vm;
   po::store(po::parse_command_line(argc,argv,desc), vm);

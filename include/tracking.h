@@ -3,6 +3,7 @@
 
 //#include "./functions.h"
 #include "./geometry.h"
+#include "./utils.h"
 #include <memory>
 #include <cmath>
 
@@ -73,9 +74,9 @@ public:
       mTracks(tracking::TrackMode::NMODES), mTrackCheck(tracking::TrackMode::NMODES, false),
       mNsteps(pNsteps), mStepSize(pStepSize) {};
 
-  const Track& track(const Magnets&, tracking::TrackMode, double, float) &;
+  const Track& track(const MagnetSystem&, tracking::TrackMode, double, float) &;
   //no copies of big objects, so forbid calling 'track()' on a temporary object
-  Track track(const Magnets&, tracking::TrackMode, double) && = delete;
+  Track track(const MagnetSystem&, tracking::TrackMode, double) && = delete;
     
 private:
   Particle mParticle;
@@ -89,8 +90,8 @@ private:
 
   XYZ calc_relativistic_velocity(const XYZ&, double, double) const;
   XYZ calc_lorentz_force(double, const XYZ&, const XYZ&) const;
-  Track track_euler( const Magnets&, double, float );
-  Track track_rungekutta4( const Magnets&, double );
+  Track track_euler( const MagnetSystem&, double, float );
+  Track track_rungekutta4( const MagnetSystem&, double );
 };
 
 #endif // TRACKING_H

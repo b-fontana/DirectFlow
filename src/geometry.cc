@@ -1,16 +1,16 @@
 #include "include/geometry.h"
 
-void Magnets::draw_() const {
+void MagnetSystem::draw() const {
 
-  std::vector<TEveBox*> magnets( mMagnetsInfo.size() );
+  std::vector<TEveBox*> magnets( mMagnets.size() );
 
     
-  for(unsigned im=0; im<mMagnetsInfo.size(); im++)
+  for(unsigned im=0; im<mMagnets.size(); im++)
     {
       magnets[im] = new TEveBox;
-      magnets[im]->SetName( mMagnetsInfo[im].label.c_str() );
+      magnets[im]->SetName( mMagnets[im].label.c_str() );
 
-      Geometry::Dimensions d = mMagnetsInfo[im].dims;
+      Dimensions d = mMagnets[im].dims;
       magnets[im]->SetVertex(0, d.X().first,  d.Y().first,  d.Z().first);
       magnets[im]->SetVertex(1, d.X().second, d.Y().first,  d.Z().first);
       magnets[im]->SetVertex(2, d.X().second, d.Y().second, d.Z().first);
@@ -20,7 +20,7 @@ void Magnets::draw_() const {
       magnets[im]->SetVertex(6, d.X().second, d.Y().second, d.Z().second);
       magnets[im]->SetVertex(7, d.X().first,  d.Y().second, d.Z().second);
 
-      magnets[im]->SetMainColor(mMagnetsInfo[im].color);
+      magnets[im]->SetMainColor(mMagnets[im].color);
       magnets[im]->SetMainTransparency(75); // the higher the value the more transparent
 	
       gEve->AddElement(magnets[im]);
@@ -28,14 +28,14 @@ void Magnets::draw_() const {
 
 }
 
-Magnets::XYZ Magnets::field(XYZ pos, double scale=1.0) const {
+MagnetSystem::XYZ MagnetSystem::field(XYZ pos, double scale=1.0) const {
   
   XYZ Bfield(0.,0.,0.);
   const double fieldDir = 1.0;
     
-  for(auto && info : mMagnetsInfo)
+  for(auto && info : mMagnets)
     {
-      if(info.type == Type::DipoleX)
+      if(info.type == Magnet::DipoleX)
 	{
 	  if(pos.Z() < info.dims.Z().second and pos.Z() > info.dims.Z().first) {
 	    if(info.intensity.second != 0)
@@ -45,7 +45,7 @@ Magnets::XYZ Magnets::field(XYZ pos, double scale=1.0) const {
 	  }
 	}
 	
-      else if(info.type == Type::DipoleY)
+      else if(info.type == Magnet::DipoleY)
 	{
 	  if(pos.Z() < info.dims.Z().second and pos.Z() > info.dims.Z().first) {
 	    if(info.intensity.first != 0)
@@ -56,7 +56,7 @@ Magnets::XYZ Magnets::field(XYZ pos, double scale=1.0) const {
 	  }
 	}
 
-      else if(info.type == Type::Quadrupole)
+      else if(info.type == Magnet::Quadrupole)
 	{
 	  if(pos.Z() < info.dims.Z().first and pos.Z() > info.dims.Z().second) {
 	    if(info.intensity.second == 0 or info.intensity.first == 0)
@@ -76,17 +76,17 @@ Magnets::XYZ Magnets::field(XYZ pos, double scale=1.0) const {
   return Bfield;
 }
 
-void Calorimeters::draw_() const {
+void CaloSystem::draw() const {
 
-  std::vector<TEveBox*> calos( mCalosInfo.size() );
+  std::vector<TEveBox*> calos( mCalos.size() );
 
     
-  for(unsigned im=0; im<mCalosInfo.size(); im++)
+  for(unsigned im=0; im<mCalos.size(); im++)
     {
       calos[im] = new TEveBox;
-      calos[im]->SetName( mCalosInfo[im].label.c_str() );
+      calos[im]->SetName( mCalos[im].label.c_str() );
 
-      Geometry::Dimensions d = mCalosInfo[im].dims;
+      Dimensions d = mCalos[im].dims;
       calos[im]->SetVertex(0, d.X().first,  d.Y().first,  d.Z().first);
       calos[im]->SetVertex(1, d.X().second, d.Y().first,  d.Z().first);
       calos[im]->SetVertex(2, d.X().second, d.Y().second, d.Z().first);
@@ -96,7 +96,7 @@ void Calorimeters::draw_() const {
       calos[im]->SetVertex(6, d.X().second, d.Y().second, d.Z().second);
       calos[im]->SetVertex(7, d.X().first,  d.Y().second, d.Z().second);
 
-      calos[im]->SetMainColor(mCalosInfo[im].color);
+      calos[im]->SetMainColor(mCalos[im].color);
       calos[im]->SetMainTransparency(75); // the higher the value the more transparent
 	
       gEve->AddElement(calos[im]);

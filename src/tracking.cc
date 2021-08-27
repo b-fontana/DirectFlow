@@ -8,7 +8,7 @@ SimParticle::XYZ SimParticle::calc_lorentz_force(double charge, const XYZ& vel, 
   return charge*vel.Cross(b); // (A*s)*(cm/s)*(kg/(A*s*s)) = (cm*kg)/(s*s)
 }
 
-const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode, double scale, float zcutoff ) & {
+const Track& SimParticle::track(const MagnetSystem& magnets, tracking::TrackMode mode, double scale, float zcutoff ) & {
   using m = tracking::TrackMode;
   
   if(mode == m::Euler) { 
@@ -31,7 +31,7 @@ const Track& SimParticle::track(const Magnets& magnets, tracking::TrackMode mode
   return mTracks[mode];
 }
 
-Track SimParticle::track_euler(const Magnets& magnets, double scale, float zcutoff)
+Track SimParticle::track_euler(const MagnetSystem& magnets, double scale, float zcutoff)
 { 
   double charge = mParticle.charge * mEcharge; // C = A*s
 
@@ -88,7 +88,6 @@ Track SimParticle::track_euler(const Magnets& magnets, double scale, float zcuto
 	    partMomNext *= mag0 / mag1; // make sure that total momentum doesn't change
 
 	    XYZ momDelta = partMomNext * ( mStepSize / mag1); // direction to move with magnetic field in cm
-	    //XYZ momDelta = partMomNext * mStepSize; // direction to move with magnetic field in cm
 	    partPos += momDelta; // new position after deltaT with magnetic field
 
 	    partMom = partMomNext;
@@ -129,13 +128,16 @@ Track SimParticle::track_euler(const Magnets& magnets, double scale, float zcuto
       ++nStepsUsed;
 
       if(fabs(partPos.X()) > 1500 or fabs(partPos.Y()) > 1500.0
-	 or fabs(partPos.Z()) > 9000 ) break;
+	 or fabs(partPos.Z()) > 100000 ) {
+	print_pos("The particle got out of the frame", partPos);
+	break;
+      }
     }
 
   return Track(nStepsUsed, energies, positions, momenta);
 }
 
-Track SimParticle::track_rungekutta4(const Magnets& magnets, double scale)
+Track SimParticle::track_rungekutta4(const MagnetSystem& magnets, double scale)
 {
   double charge = mParticle.charge * mEcharge; // C = A*s
 
