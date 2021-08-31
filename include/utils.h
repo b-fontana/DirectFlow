@@ -12,6 +12,11 @@ inline void print_pos(std::string intro, T p) {
   std::cout << intro << ": x=" << p.X() << ", y=" << p.Y() << ", z=" << p.Z() << std::endl;
 }
 
+template<class T>
+inline T to_degrees(T a) {
+  return a*360 / (2*M_PI);
+}
+
 inline std::pair<float,float> calculate_angles_to_beamline(float x, float y, float z) {
   /*
     Simple trigonometric relationship.
@@ -27,6 +32,16 @@ inline std::pair<float,float> calculate_angles_to_beamline(float x, float y, flo
   p.first = std::atan( y / z ); //z vs y
   p.second = std::atan( x / z ); //z vs x
   return p;
+}
+
+inline unsigned get_index_closer_to_origin(const std::vector<XYZ>& pos, unsigned nitems) {
+  float distance;
+  for(unsigned i_step = 0; i_step<nitems; i_step++) {
+    distance = TMath::Sqrt( pos[i_step].Mag2() );
+    if(distance < TMath::Sqrt( pos[i_step+1].Mag2() ))
+      return i_step;
+  }
+  return nitems-1;
 }
 
 inline float distance_two_angles(float a1, float a2) {

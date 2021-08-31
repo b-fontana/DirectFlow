@@ -53,7 +53,7 @@ Track SimParticle::track_euler(const MagnetSystem& magnets, double scale, float 
   unsigned nStepsUsed = 0;
 
   bool deviation_done = false;
-  
+
   while(nStepsUsed<mNsteps)
     {
       positions.push_back( partPos);
@@ -66,8 +66,8 @@ Track SimParticle::track_euler(const MagnetSystem& magnets, double scale, float 
       // new position after deltaT without magnetic field
       XYZ partPosNext = partPos + posIncr;
       // center of begin and stop vector without magnetic field
-      XYZ partPosMid = (partPos + partPosNext) * 0.5;     
-
+      XYZ partPosMid = (partPos + partPosNext) * 0.5;
+      
       XYZ Bfield = magnets.field(partPosMid, scale);
 
       if(Bfield.Mag2() == 0.0) {
@@ -76,6 +76,12 @@ Track SimParticle::track_euler(const MagnetSystem& magnets, double scale, float 
 	//FAKE DEFLECTION, FAKE FORCE
 	if( std::abs(partPos.Z()) < zcutoff and !deviation_done)
 	  {
+	    if(partPos.Z()>0)
+	      partPos.SetXYZ(partPos.X(), partPos.Y(), zcutoff); //ensure it sits exactly at zcutoff
+	    else
+	      partPos.SetXYZ(partPos.X(), partPos.Y(), -zcutoff); //ensure it sits exactly at zcutoff
+
+	    
 	    // float distToIP = std::sqrt( partPos.Mag2() ); //IP define to be at (0,0,0)
 	    // float angle = std::acos( distCutoff / disitToIP );
 	    XYZ vectorDir = -1 * partPos / TMath::Sqrt( partPos.Mag2() );
@@ -127,10 +133,9 @@ Track SimParticle::track_euler(const MagnetSystem& magnets, double scale, float 
       
       ++nStepsUsed;
 
-      if(fabs(partPos.X()) > 1500 or fabs(partPos.Y()) > 1500.0
-	 or fabs(partPos.Z()) > 100000 ) {
-	print_pos("The particle got out of the frame", partPos);
-	break;
+      if(fabs(partPos.X()) > fabs(mParticle.pos.X()) or fabs(partPos.Y()) > fabs(mParticle.pos.Y())
+      	 or fabs(partPos.Z()) > fabs(mParticle.pos.Z()) ) {
+      	break;
       }
     }
 

@@ -23,8 +23,15 @@ def add_args(parser, mode):
             '--step_size',
             type=float,
             default=1380.00,
-        help='Step size [cm].'
-    )
+            help='Step size [cm].'
+        )
+        parser.add_argument(
+            '--mode',
+            type=str,
+            default='euler',
+            choices=['euler', 'rk4'],
+            help='Method used to track the particle'
+        )
 
     if mode == 'gen':
         parser.add_argument(

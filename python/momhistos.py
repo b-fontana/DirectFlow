@@ -22,14 +22,16 @@ def run(FLAGS):
     BASE = os.environ['PWD']
     HTML_NAME = os.path.join(BASE, os.path.basename(__file__)[:-3] + '_' + \
                              str(FLAGS.x) + 'X_' + str(FLAGS.x) + 'Y_' + \
-                             str(FLAGS.energy) + 'En.html')
+                             str(FLAGS.energy) + 'En_' + \
+                             str(FLAGS.step_size) + 'SZ.html')
 
     ##########################################################
     ######## File reading ####################################
     ##########################################################
     posstr = str(FLAGS.x).replace('.', 'p') + "*" + \
         str(FLAGS.y).replace('.', 'p') + "*" + \
-        str(FLAGS.energy).replace('.', 'p')
+        str(FLAGS.energy).replace('.', 'p') + "*" + \
+        str(FLAGS.step_size).replace('.', 'p')
     search_str = os.path.join(BASE, 'data/histo_' + FLAGS.mode + '_' + posstr + '*.csv')
 
     l = glob.glob(search_str)
@@ -134,5 +136,5 @@ def run(FLAGS):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    FLAGS, _ = argparser.add_args(parser)
+    FLAGS, _ = argparser.add_args(parser, 'sim')
     run(FLAGS)

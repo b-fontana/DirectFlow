@@ -8,7 +8,7 @@ INCDIR  := include
 DEPDIR  := .deps
 
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
-DEBUG_LEVEL := -g -fdiagnostics-color=always
+DEBUG_LEVEL := -g -fdiagnostics-color=never
 EXTRA_CCFLAGS := -Wall -std=c++17 -O -pedantic -pedantic-errors -Wformat -Wformat=2 \
 	-Wformat-nonliteral -Wformat-security \
 	-Wformat-y2k \
