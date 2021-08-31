@@ -1,4 +1,4 @@
-def add_args(parser):
+def add_args(parser, mode):
     parser.add_argument(
         '--x',
         type=float,
@@ -17,11 +17,21 @@ def add_args(parser):
         default=1380.00,
         help='Beam energy [GeV].'
     )
-    parser.add_argument(
-        '--mode',
-        type=str,
-        default='euler',
-        choices=['euler', 'rk4'],
-        help='Method used to track the particle'
+    
+    if mode == 'sim':
+        parser.add_argument(
+            '--step_size',
+            type=float,
+            default=1380.00,
+        help='Step size [cm].'
     )
+
+    if mode == 'gen':
+        parser.add_argument(
+            '--dataset',
+            type=str,
+            choices=['boltz', 'gaus'],
+            help='Distribution to inspect.'
+        )
+        
     return parser.parse_known_args()

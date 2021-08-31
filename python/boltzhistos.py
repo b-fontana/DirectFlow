@@ -26,7 +26,7 @@ def run(FLAGS):
     ##########################################################
     ######## File reading ####################################
     ##########################################################
-    search_str = os.path.join(BASE, 'data/boltz.csv')
+    search_str = os.path.join(BASE, 'data/' + FLAGS.dataset + '.csv')
 
     l = glob.glob(search_str)
     if len(l) != 1:
@@ -51,9 +51,7 @@ def run(FLAGS):
                   y=FIGDIMS[1]-32*STEPS[1], **additional_kwargs)
 
     figkw = {'y.axis_label': 'Counts'}
-    figkw.update({'x.axis_label': 'pT [GeV]',
-                  'x_range': Range1d(0,10)})
-    b.histogram(idx=0, data=np.histogram(df.data[df.data<20], bins=100),
+    b.histogram(idx=0, data=np.histogram(df.data, bins=100),
                 color='blue', fig_kwargs=figkw)
     
     
@@ -65,5 +63,5 @@ def run(FLAGS):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    FLAGS, _ = argparser.add_args(parser)
+    FLAGS, _ = argparser.add_args(parser, 'gen')
     run(FLAGS)

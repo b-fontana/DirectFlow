@@ -12,6 +12,15 @@ public:
 
   virtual T generate() = 0;
 
+  void test(std::string filename, unsigned niters=100000) {
+    std::fstream filetest;
+    filetest.open(filename, std::ios_base::out);
+    filetest << "data" << std::endl;
+    for(unsigned i = 0; i<niters; ++i)
+      filetest << generate() << std::endl;
+    filetest.close();
+  }
+
 protected:
   std::mt19937 mRng;
   
@@ -42,7 +51,7 @@ public:
   }
   
   T generate() { return mDist(Generator<T>::mRng); }
-
+  
 private:
   std::normal_distribution<T> mDist;
 };
@@ -64,15 +73,6 @@ public:
   }
 
   T generate() { return mDist->GetRandom(); }
-
-  void test(std::string filename, unsigned niters=100000) {
-    std::fstream filetest;
-    filetest.open(filename, std::ios_base::out);
-    filetest << "data" << std::endl;
-    for(unsigned i = 0; i<niters; ++i)
-      filetest << generate() << std::endl;
-    filetest.close();
-  }
 
 private:
   TF1* mDist;
