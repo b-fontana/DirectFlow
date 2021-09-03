@@ -12,6 +12,7 @@
 #include <TApplication.h>
 #include "Math/Vector3D.h" // XYZVector
 #include "TVector3.h"
+#include "TLorentzVector.h"
 
 #include <TEveManager.h>
 #include "TEveLine.h"
@@ -56,7 +57,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   double Bscale = 1.;
   XYZ origin(0.f, 0.f, 0.f);
   std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{30000, 13000 }};
-  std::array<double, tracking::TrackMode::NMODES> stepsize = {{ args.zcutoff/500, 1. }};
+  std::array<double, tracking::TrackMode::NMODES> stepsize = {{ static_cast<double>(args.zcutoff)/500., 1. }};
   std::array<std::string, tracking::TrackMode::NMODES> suf = {{ "_euler", "_rk4" }};
     
   //generate random positions around input positions
@@ -221,29 +222,26 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       Vec<float> psi_angles(batchSize_);
       Vec<float> corr(batchSize_);
 
-      std::pair<float,float> nomAngles = calculate_angles_to_beamline(args.x, args.y, args.zcutoff);
+      //std::pair<float,float> nomAngles = calculate_angles_to_beamline(args.x, args.y, args.zcutoff);
 
       //unit vectors
-      TVector3 uvX_1(1,0,0), uvY_1(0,1,0);
-      TVector3 uvX_2(1,0,0), uvY_2(0,1,0);
+      TVector3 uZ1(-args.x, -args.y, args.zcutoff);
+      uZ1 = uZ1.Unit();
+      TVector3 uX1 = uZ1.Orthogonal();
+      TVector3 uY1 = uX1;
+      uY1.Rotate( M_PI/2, uZ1 );
+      assert( (M_PI/2) - uX1.Angle(uY1) < 1e-15 );
+      
+      TVector3 uZ2(-args.x, -args.y, -args.zcutoff);
+      uZ2 = uZ2.Unit();
+      TVector3 uX2 = uZ2.Orthogonal();
+      TVector3 uY2 = uX2;
+      uY2.Rotate( M_PI/2, uZ2 );
+      assert( (M_PI/2) - uX2.Angle(uY2) < 1e-15 );
 
-      uvX_1.RotateY( -nomAngles.second );
-      uvY_1.Rotate( nomAngles.first, uvX_1);
-
-      uvX_2.RotateY( nomAngles.second );
-      uvY_2.Rotate( -nomAngles.first, uvX_2 );
-
-      // std::cout << TMath::Sqrt(uvX_1.Mag2()) << std::endl;
-      // print_pos<TVector3>("X", uvX_1);
-      // print_pos<TVector3>("Y", uvY_1);
-      // std::cout << TMath::Sqrt(uvX_1.Mag2()) << std::endl;
-      // std::cout << TMath::Sqrt(uvY_1.Mag2()) << std::endl;
-      // std::cout << "---" << std::endl;
-      // std::exit(0);
-
-      if(uvX_1.Dot(uvY_1) > 1e-15 or uvX_2.Dot(uvY_2) > 1e-15) {
+      if(uX1.Dot(uY1) > 1e-15 or uX2.Dot(uY2) > 1e-15) {
 	std::cout << "The vectors must be perpendicular!" << std::endl;
-	std::cout << uvX_1.Dot(uvY_1) << ", " << uvX_2.Dot(uvY_2) << std::endl;
+	std::cout << uX1.Dot(uY1) << ", " << uX2.Dot(uY2) << std::endl;
 	std::exit(0);
       }
             
@@ -262,62 +260,32 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 
 	XYZ last1_ = itPositions1[i].back();
 	TVector3 last1V(last1_.X(), last1_.Y(), last1_.Z());
-	last1V.Rotate( -nomAngles.first, uvX_1);
-	last1V.RotateY( nomAngles.second );
-	
-	double last1X_ = last1V.Dot(uvX_1);
-	double last1Y_ = last1V.Dot(uvY_1);
+	TVector3 check1(-p1[i].pos.X(), -p1[i].pos.Y(), args.zcutoff);
+	if( check1.Angle(last1V) > 1e-7 ) {
+	  std::cout << "The trajectory is not as it should!" << std::endl;
+	  std::cout << "Angle1: " << check1.Angle(last1V) << std::endl;
+	  std::exit(0);
+	}
+	double last1X_ = last1_.Dot( uX1 );
+	double last1Y_ = last1_.Dot( uY1 );
 	
 	XYZ last2_ = itPositions2[i].back();
 	TVector3 last2V(last2_.X(), last2_.Y(), last2_.Z());
-	last2V.Rotate( nomAngles.first, uvX_2);
-	last2V.RotateY( -nomAngles.second );
-
-	double last2X_ = last2V.Dot(uvX_2);
-	double last2Y_ = last2V.Dot(uvY_2);
-
+	TVector3 check2(-p2[i].pos.X(), -p2[i].pos.Y(), -args.zcutoff);
+	if( check2.Angle(last2V) > 1e-7 ) {
+	  std::cout << "The trajectory is not as it should!" << std::endl;
+	  std::cout << "Angle2: " << check2.Angle(last2V) << std::endl;
+	  std::exit(0);
+	}
+	double last2X_ = last2_.Dot( uX2 );
+	double last2Y_ = last2_.Dot( uY2 );
+	       
 	psi1[i] = std::atan2( last1Y_, last1X_ ) + M_PI;
 	psi2[i] = std::atan2( last2Y_, last2X_ ) + M_PI;
 
 	//check if the two particles "crossed"
 	//this catches number of iterations that are too small
 	assert(last1_.Z() > last2_.Z());
-	
-	// // XYZ point_check(0., 0., 1.);
-	
-	// //calculate intersection between particle trajectory and plane
-	// XYZ is1 = intersect_plane_with_line(line_perp_plane1, origin,
-	// 				    origin, last1V, last1V);
-	// XYZ is2 = intersect_plane_with_line(line_perp_plane2, origin,
-	// 				    origin, last2V, last2V);
-	// // XYZ is1_check = intersect_plane_with_line(point_check, origin,
-	// // 					  origin, last1V, last1V);
-	// // XYZ is2_check = intersect_plane_with_line(point_check, origin,
-	// // 					  origin, last2V, last2V);
-	
-	// //calculate intersection between beam line and plane
-	// XYZ is1_origin = intersect_plane_with_line(line_perp_plane1, origin,
-	// 					   line_perp_plane1, origin,
-	// 					   last1V);
-	// XYZ is2_origin = intersect_plane_with_line(line_perp_plane2, origin,
-	// 					   line_perp_plane2, origin,
-	// 					   last2V);
-	
-	// //cordinate transformation	
-	// is1 = rotate_coordinates(is1, nomAngles.first, nomAngles.second);
-	// is2 = rotate_coordinates(is2, -1*(nomAngles.first), -1*(nomAngles.second));
-
-	// is1_origin = rotate_coordinates(is1_origin, nomAngles.first, nomAngles.second);
-	// is2_origin = rotate_coordinates(is2_origin, -1*(nomAngles.first), -1*(nomAngles.second));
-	
-	// //cordinate translation
-	// is1 = translate_coordinates(is1, is1_origin);
-	// is2 = translate_coordinates(is2, is2_origin);
-	
-	// //psi angles do not depend on Z
-	// psi1[i] = std::atan2( is1.Y(), is1.X() ) + M_PI;
-	// psi2[i] = std::atan2( is2.Y(), is2.X() ) + M_PI;
-	
 
 	float psi2_tmp = psi2[i]+M_PI>2*M_PI ? psi2[i]-M_PI : psi2[i]+M_PI;
 	psi_angles[i] = distance_two_angles(psi1[i], psi2_tmp);
@@ -369,21 +337,32 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	
 	if(ix==0 and ibatch==0)
 	  file2 << "iBatch,Idx,sumMomX,sumMomY,sumMomZ,PsiA,PsiB,Psi,Phi,Cos" << std::endl;
+	
+	TLorentzVector momLorentz1;
+	momLorentz1.SetXYZM(itMomenta1[ix][id1].X(),
+			    itMomenta1[ix][id1].Y(),
+			    itMomenta1[ix][id1].Z(), args.mass);
+	
+	TLorentzVector momLorentz2;
+	momLorentz2.SetXYZM(itMomenta2[ix][id2].X(),
+			    itMomenta2[ix][id2].Y(),
+			    itMomenta2[ix][id2].Z(), args.mass);
+	TLorentzVector momSum = momLorentz1 + momLorentz2;
 
-	XYZ momSum = itMomenta1[ix][id1] + itMomenta2[ix][id2];
-	//pT_boltzmann->Boost(Li->BoostVector())
-	// where Li is a LorentzVector (pTi, 2GeV)
+	TLorentzVector boltzPT;
+	boltzPT.SetPtEtaPhiM(boltzdist.generate(),
+			     etadist.generate(), phidist.generate(),
+			     args.mass);
 
-	ROOT::Math::PtEtaPhiMVector boltzPT(boltzdist.generate(),
-					    etadist.generate(), phidist.generate(),
-					    args.mass);
-
+	TVector3 bVector = momSum.BoostVector();
+	boltzPT.Boost(bVector);
+	
 	float nNucleons = 200.f;
-	ROOT::Math::PxPyPzEVector kickPT(momSum.X()/nNucleons,
-					 momSum.Y()/nNucleons,
-					 momSum.Z()/nNucleons,
-					 args.mass);
-	ROOT::Math::PtEtaPhiMVector totalPT = boltzPT + kickPT;
+	TLorentzVector kickPT;
+	kickPT.SetPxPyPzE(momSum.Px()/nNucleons,
+			  momSum.Py()/nNucleons,
+			  momSum.Pz()/nNucleons, args.energy);
+	TLorentzVector totalPT = boltzPT + kickPT;
 	
 	float totalPhi = totalPT.Phi();
 	if(totalPhi<0)
@@ -393,9 +372,9 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	
 	file2 << std::to_string( ibatch ) << ","
 	      << std::to_string( ix ) << ","
-	      << std::to_string( momSum.X() ) << ","
-	      << std::to_string( momSum.Y() ) << ","
-	      << std::to_string( momSum.Z() ) << ","
+	      << std::to_string( momSum.Px() ) << ","
+	      << std::to_string( momSum.Py() ) << ","
+	      << std::to_string( momSum.Pz() ) << ","
 	      << std::to_string( psi1[ix] ) << ","
 	      << std::to_string( psi2[ix] ) << ","
 	      << std::to_string( psi_angles[ix] ) << ","

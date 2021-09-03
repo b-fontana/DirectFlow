@@ -86,7 +86,7 @@ private:
   static constexpr double mSpeedOfLight = 29979245800.0; // (cm/s)
   static constexpr double mEcharge = 1.602176565E-19; // C = A*s
   unsigned mNsteps = 3000;
-  double mStepSize = 1.;
+  double mStepSize = 0.;
 
   XYZ calc_relativistic_velocity(const XYZ&, double, double) const;
   XYZ calc_lorentz_force(double, const XYZ&, const XYZ&) const;

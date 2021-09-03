@@ -13,6 +13,11 @@ inline void print_pos(std::string intro, T p) {
 }
 
 template<class T>
+inline void print_pos_4D(std::string intro, T p) {
+  std::cout << intro << ": x=" << p.X() << ", y=" << p.Y() << ", z=" << p.Z() << ", t=" << p.T() << std::endl;
+}
+
+template<class T>
 inline T to_degrees(T a) {
   return a*360 / (2*M_PI);
 }
@@ -38,7 +43,7 @@ inline unsigned get_index_closer_to_origin(const std::vector<XYZ>& pos, unsigned
   float distance;
   for(unsigned i_step = 0; i_step<nitems; i_step++) {
     distance = TMath::Sqrt( pos[i_step].Mag2() );
-    if(distance < TMath::Sqrt( pos[i_step+1].Mag2() ))
+    if(distance < TMath::Sqrt( pos[i_step+1].Mag2() ) and fabs(pos[i_step].Z()) < 10.)
       return i_step;
   }
   return nitems-1;
