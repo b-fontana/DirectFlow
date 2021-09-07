@@ -111,4 +111,8 @@ inline float get_y_in_line(float x, float x1, float y1, float x2, float y2) {
   return slope*(x-x1) + y1;
 }
 
+inline float sq(float x){
+  return x*x;
+}
+
 #endif //UTILS_H

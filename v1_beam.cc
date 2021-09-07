@@ -63,7 +63,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   //generate random positions around input positions
   NormalDistribution<double> xdist(args.x, 0.1); //beam width of 1 millimeter
   NormalDistribution<double> ydist(args.y, 0.1); //beam width of 1 millimeter
-  BoltzmannDistribution<float> boltzdist(1.f, 0.15, 4, 0.138);  //boltzdist.test("data/boltz.csv");
+  BoltzmannDistribution<float> boltzdist(1.f, 0.15, 4, 0.138);  boltzdist.test("data/boltz.csv");
   UniformDistribution<float> phidist(-M_PI, M_PI);
   UniformDistribution<float> etadist(-2.f, 2.f);
   
@@ -342,20 +342,43 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	momLorentz1.SetXYZM(itMomenta1[ix][id1].X(),
 			    itMomenta1[ix][id1].Y(),
 			    itMomenta1[ix][id1].Z(), args.mass);
+	//print_pos_4D("momLor1", momLorentz1);
 	
 	TLorentzVector momLorentz2;
 	momLorentz2.SetXYZM(itMomenta2[ix][id2].X(),
 			    itMomenta2[ix][id2].Y(),
 			    itMomenta2[ix][id2].Z(), args.mass);
+	//print_pos_4D("momLor2", momLorentz2);
+	
 	TLorentzVector momSum = momLorentz1 + momLorentz2;
+	float mass_pion = 0.13498;
+	
+	momSum.SetE( sqrt( sq(momSum.X()) + sq(momSum.Y()) + sq(momSum.Z()) + sq(mass_pion) ) );
+	//print_pos_4D("momSum", momSum);
 
 	TLorentzVector boltzPT;
-	boltzPT.SetPtEtaPhiM(boltzdist.generate(),
-			     etadist.generate(), phidist.generate(),
+	float boltzgen = boltzdist.generate();
+	float etagen = etadist.generate();
+	float phigen = phidist.generate();
+	boltzPT.SetPtEtaPhiM(boltzgen*std::sin(etagen),
+			     etagen, phigen,
+			     mass_pion);
+
+	// std::cout << "Boltz Random: " << boltzgen  << std::endl;
+	// std::cout << TMath::Sqrt(boltzPT.Px()*boltzPT.Px()+boltzPT.Py()*boltzPT.Py()) << std::endl;
+
+	boltzPT.SetPtEtaPhiM(boltzgen,
+			     etagen, phigen,
 			     args.mass);
+	// std::cout << boltzPT.X()*boltzPT.X()+boltzPT.Y()*boltzPT.Y() << std::endl;
+	// std::cout << "ETA: " << etagen  << std::endl;
+	// std::cout << "PHI: " << phigen  << std::endl;
+	//print_pos_4D("boltzPT before boost", boltzPT);
 
 	TVector3 bVector = momSum.BoostVector();
 	boltzPT.Boost(bVector);
+	//print_pos("boost Vector", bVector);
+	//print_pos_4D("boltzPT after boost", boltzPT);
 	
 	float nNucleons = 200.f;
 	TLorentzVector kickPT;
