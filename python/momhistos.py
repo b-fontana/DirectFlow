@@ -9,21 +9,23 @@ import argparse
 from latex import LatexLabel
 from bokeh.layouts import gridplot
 from bokeh.embed import components
+from bokeh.models import Range1d
     
 def run(FLAGS):
     ##########################################################
     ######## Constants #######################################
     ##########################################################
-    NFIGS=9
+    NFRAMES=3
+    NFIGS=6
     FIGDIMS1 = 600, 600
     FIGDIMS2 = 800, 700
     STEPS = FIGDIMS1[0]/100, FIGDIMS1[1]/100, 
 
     BASE = os.environ['PWD']
-    HTML_NAME = os.path.join(BASE, os.path.basename(__file__)[:-3] + '_' + \
-                             str(FLAGS.x) + 'X_' + str(FLAGS.x) + 'Y_' + \
-                             str(FLAGS.energy) + 'En_' + \
-                             str(FLAGS.step_size) + 'SZ.html')
+    HTML_BASE_NAME = os.path.join(BASE, os.path.basename(__file__)[:-3] + '_' + \
+                                  str(FLAGS.x) + 'X_' + str(FLAGS.x) + 'Y_' + \
+                                  str(FLAGS.energy) + 'En_' + \
+                                  str(FLAGS.step_size) + 'SZ_')
 
     ##########################################################
     ######## File reading ####################################
@@ -56,7 +58,8 @@ def run(FLAGS):
     figheights = [FIGDIMS1[0] for _ in range(NFIGS-1)]
     figheights.extend([FIGDIMS2[1]])
     
-    b = bkp.BokehPlot( HTML_NAME, nfigs=NFIGS, nwidgets=0,
+    b = bkp.BokehPlot( [HTML_BASE_NAME + 'Cat' + str(x) + '.html' for x in range(NFRAMES)],
+                       nframes=NFRAMES, nfigs=NFIGS, nwidgets=0,
                        fig_width=figwidths,
                        fig_height=figheights )
 
@@ -67,17 +70,16 @@ def run(FLAGS):
                   y=FIGDIMS1[1]-32*STEPS[1], **additional_kwargs)
 
     figkw = {'y.axis_label': 'Counts'}
-    figkw.update({'x.axis_label': 'X momentum sum [GeV]'})
-    b.histogram(idx=0, data=np.histogram(df.sumMomXAbs, bins=100),
-            color='orange', fig_kwargs=figkw)
-    figkw.update({'x.axis_label': 'Y momentum sum [GeV]'})
-    b.histogram(idx=1, data=np.histogram(df.sumMomYAbs, bins=100),
-            color='orange', fig_kwargs=figkw)
-    figkw.update({'x.axis_label': 'Z momentum sum [GeV]'})
-    b.histogram(idx=2, data=np.histogram(df.sumMomZ, bins=100),
-            color='orange', fig_kwargs=figkw)
+    # figkw.update({'x.axis_label': 'X momentum sum [GeV]'})
+    # b.histogram(idx=0, data=np.histogram(df.sumMomXAbs, bins=100),
+    #         color='orange', fig_kwargs=figkw)
+    # figkw.update({'x.axis_label': 'Y momentum sum [GeV]'})
+    # b.histogram(idx=1, data=np.histogram(df.sumMomYAbs, bins=100),
+    #         color='orange', fig_kwargs=figkw)
+    # figkw.update({'x.axis_label': 'Z momentum sum [GeV]'})
+    # b.histogram(idx=2, data=np.histogram(df.sumMomZ, bins=100),
+    #         color='orange', fig_kwargs=figkw)
 
-    
     dlatex = dict(x=FIGDIMS1[0]/2+3.*STEPS[0],
                   y=FIGDIMS1[1]-10*STEPS[1],
                   x_units="screen",
@@ -95,38 +97,53 @@ def run(FLAGS):
     psistr = '\u03A8'
     phistr = '\u03D5'
     pistr = '\u03C0'
-    figkw.update({'x.axis_label': psistr + ': Angle between ' + psistr + 'A and ' + psistr + 'B +' + pistr + ' [rad]'})
-    b.histogram(idx=3, data=np.histogram(df.Psi, bins=100),
-                color='purple', fig_kwargs=figkw)
 
-    figkw.update({'x.axis_label': phistr + ' [rad]'})
-    b.histogram(idx=4, data=np.histogram(df.Phi, bins=100),
-                color='purple', fig_kwargs=figkw)
+    selections = [ (df.cat1>=0) & (df.cat1<=2), df.cat1==1, df.cat1==2]
 
-    figkw.update({'x.axis_label': 'Cos(' + phistr + '-' + psistr + ') [rad]'})
-    b.histogram(idx=5, data=np.histogram(df.Cos, bins=100),
-                color='purple', fig_kwargs=figkw)
+    for iframe,sel in enumerate(selections):       
+        figkw.update({'x.axis_label': psistr + ': Angle/2 between ' + psistr + 'A and ' + psistr + 'B [rad]',
+                      'x_range': Range1d(0,np.pi)})
+        b.histogram(idx=0, iframe=iframe,
+                    data=np.histogram(df.Psi[sel], bins=100),
+                    color='purple', fig_kwargs=figkw)
 
+        figkw.update({'x.axis_label': phistr + ' [rad]',
+                      'x_range': Range1d(1,6)})
+        b.histogram(idx=1, iframe=iframe,
+                    data=np.histogram(df.Phi[sel], bins=100),
+                    color='purple', fig_kwargs=figkw)
+        
+        figkw.update({'x.axis_label': 'Cos(' + phistr + '-' + psistr + ') [rad]',
+                      'x_range': Range1d(-1,1)})
+        b.histogram(idx=2, iframe=iframe,
+                    data=np.histogram(df.Cos[sel], bins=100),
+                    color='purple', fig_kwargs=figkw)
+        figkw.pop('x_range')
+        
+        #psiA and psiB
+        figkw.update({'x.axis_label': psistr + 'A [rad]'})
+        b.histogram(idx=3, iframe=iframe,
+                    data=np.histogram(df.PsiA[sel], bins=100),
+                    color='red', fig_kwargs=figkw)
+        figkw.update({'x.axis_label': psistr + 'B [rad]'})
+        b.histogram(idx=4, iframe=iframe,
+                    data=np.histogram(df.PsiB[sel], bins=100),
+                    color='red', fig_kwargs=figkw)
 
-    #psiA and psiB
-    figkw.update({'x.axis_label': psistr + 'A [rad]'})
-    b.histogram(idx=6, data=np.histogram(df.PsiA, bins=100),
-                color='red', fig_kwargs=figkw)
-    figkw.update({'x.axis_label': psistr + 'B [rad]'})
-    b.histogram(idx=7, data=np.histogram(df.PsiB, bins=100),
-                color='red', fig_kwargs=figkw)
-
-    figkw.update({'x.axis_label': psistr + 'A + ' + pistr + ' [rad]',
-                  'y.axis_label': psistr + 'B [rad]'})
-    b.histogram(idx=8, data=np.histogram2d(df.PsiA, df.PsiB, bins=50),
-                style='quad%Viridis',
-                fig_kwargs=figkw)
+        figkw.update({'x.axis_label': psistr + 'A [rad]',
+                      'y.axis_label': psistr + 'B [rad]'})
+        b.histogram(idx=5, iframe=iframe,
+                    data=np.histogram2d(df.PsiA[sel], df.PsiB[sel], bins=50),
+                    style='quad%Viridis',
+                    fig_kwargs=figkw)
 
     ##########################################################
     ######## Saving ##########################################
     ##########################################################
     #b.save_frame(nrows=3, ncols=3, show=True)
-    b.save_frame(layout=[[0,1,2],[8,6,7],[3,4,5]], show=True)
+    b.save_frame(iframe=0, layout=[[5,3,4],[0,1,2]], show=True)
+    b.save_frame(iframe=1, layout=[[5,3,4],[0,1,2]], show=True)
+    b.save_frame(iframe=2, layout=[[5,3,4],[0,1,2]], show=True)
     #b.save_figs(path='.', mode='png')
 
     script, div = components( b.get_figure(8) )

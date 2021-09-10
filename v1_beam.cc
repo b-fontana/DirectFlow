@@ -30,6 +30,7 @@ public:
   float y;
   float energy;
   float mass;
+  float mass_interaction;
   unsigned nparticles;
   float zcutoff;
 };
@@ -63,7 +64,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   //generate random positions around input positions
   NormalDistribution<double> xdist(args.x, 0.1); //beam width of 1 millimeter
   NormalDistribution<double> ydist(args.y, 0.1); //beam width of 1 millimeter
-  BoltzmannDistribution<float> boltzdist(1.f, 0.15, 4, 0.138);  boltzdist.test("data/boltz.csv");
+  BoltzmannDistribution<float> boltzdist(1.f, 0.15, 4, 0.138);  //boltzdist.test("data/boltz.csv");
   UniformDistribution<float> phidist(-M_PI, M_PI);
   UniformDistribution<float> etadist(-2.f, 2.f);
   
@@ -155,15 +156,17 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   std::string roundy = std::to_string(args.y).substr(0,8);
   std::string rounden = std::to_string(args.energy).substr(0,10);
   std::string roundsz = std::to_string(stepsize[mode]);
+  std::string roundmint = std::to_string(args.mass_interaction).substr(0,8);
   std::replace( roundx.begin(), roundx.end(), '.', 'p');
   std::replace( roundy.begin(), roundy.end(), '.', 'p');
   std::replace( rounden.begin(), rounden.end(), '.', 'p');
   std::replace( roundsz.begin(), roundsz.end(), '.', 'p');
+  std::replace( roundmint.begin(), roundmint.end(), '.', 'p');
   std::string str_initpos = "_" + roundx + "X_" + roundy + "Y_" + rounden + "En_";
-  std::string sz = roundsz + "SZ";
+  std::string extra = roundsz + "SZ_" + roundmint + "MInt" ;
 
-  std::string filename("data/track" + suf[mode] + str_initpos + sz + ".csv");
-  std::string filename2("data/histo" + suf[mode] + str_initpos + sz + ".csv");
+  std::string filename("data/track" + suf[mode] + str_initpos + extra + ".csv");
+  std::string filename2("data/histo" + suf[mode] + str_initpos + extra + ".csv");
   file2.open(filename2, std::ios_base::out);
       
   for (unsigned ibatch : tq::trange(nbatches))
@@ -219,6 +222,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 
       Vec<float> psi1(batchSize_);
       Vec<float> psi2(batchSize_);
+      Vec<unsigned> cat(batchSize_, 99);
       Vec<float> psi_angles(batchSize_);
       Vec<float> corr(batchSize_);
 
@@ -283,6 +287,16 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	psi1[i] = std::atan2( last1Y_, last1X_ ) + M_PI;
 	psi2[i] = std::atan2( last2Y_, last2X_ ) + M_PI;
 
+	//define categories according to relative angular difference
+	float category_bound = M_PI/6;
+	float diff = std::abs(psi1[i]-psi2[i]);
+	if( diff < category_bound or diff > 2*M_PI-category_bound )
+	  cat[i] = 1;
+	else if(diff < M_PI+category_bound and diff > M_PI-category_bound)
+	  cat[i] = 2;
+	else
+	  cat[i] = 0;
+	
 	//check if the two particles "crossed"
 	//this catches number of iterations that are too small
 	assert(last1_.Z() > last2_.Z());
@@ -336,7 +350,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	unsigned id2 = get_index_closer_to_origin(itPositions2[ix], minelem);
 	
 	if(ix==0 and ibatch==0)
-	  file2 << "iBatch,Idx,sumMomX,sumMomY,sumMomZ,PsiA,PsiB,Psi,Phi,Cos" << std::endl;
+	  file2 << "iBatch,Idx,sumMomX,sumMomY,sumMomZ,PsiA,PsiB,cat1,Psi,Phi,Cos" << std::endl;
 	
 	TLorentzVector momLorentz1;
 	momLorentz1.SetXYZM(itMomenta1[ix][id1].X(),
@@ -351,34 +365,21 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	//print_pos_4D("momLor2", momLorentz2);
 	
 	TLorentzVector momSum = momLorentz1 + momLorentz2;
-	float mass_pion = 0.13498;
 	
-	momSum.SetE( sqrt( sq(momSum.X()) + sq(momSum.Y()) + sq(momSum.Z()) + sq(mass_pion) ) );
+	momSum.SetE( TMath::Sqrt( sq(momSum.X()) + sq(momSum.Y()) + sq(momSum.Z()) + sq(args.mass_interaction) ) );
 	//print_pos_4D("momSum", momSum);
 
 	TLorentzVector boltzPT;
+	float mass_pion = 0.139;
 	float boltzgen = boltzdist.generate();
 	float etagen = etadist.generate();
 	float phigen = phidist.generate();
-	boltzPT.SetPtEtaPhiM(boltzgen*std::sin(etagen),
+	boltzPT.SetPtEtaPhiM(boltzgen,
 			     etagen, phigen,
 			     mass_pion);
 
-	// std::cout << "Boltz Random: " << boltzgen  << std::endl;
-	// std::cout << TMath::Sqrt(boltzPT.Px()*boltzPT.Px()+boltzPT.Py()*boltzPT.Py()) << std::endl;
-
-	boltzPT.SetPtEtaPhiM(boltzgen,
-			     etagen, phigen,
-			     args.mass);
-	// std::cout << boltzPT.X()*boltzPT.X()+boltzPT.Y()*boltzPT.Y() << std::endl;
-	// std::cout << "ETA: " << etagen  << std::endl;
-	// std::cout << "PHI: " << phigen  << std::endl;
-	//print_pos_4D("boltzPT before boost", boltzPT);
-
 	TVector3 bVector = momSum.BoostVector();
 	boltzPT.Boost(bVector);
-	//print_pos("boost Vector", bVector);
-	//print_pos_4D("boltzPT after boost", boltzPT);
 	
 	float nNucleons = 200.f;
 	TLorentzVector kickPT;
@@ -400,6 +401,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	      << std::to_string( momSum.Pz() ) << ","
 	      << std::to_string( psi1[ix] ) << ","
 	      << std::to_string( psi2[ix] ) << ","
+	      << std::to_string( cat[ix] ) << ","
 	      << std::to_string( psi_angles[ix] ) << ","
 	      << std::to_string( totalPhi ) << ","
 	      << std::to_string( corr[ix] ) 
@@ -443,13 +445,15 @@ int main(int argc, char **argv) {
  
   namespace po = boost::program_options;
   po::options_description desc("Options");
+  //https://www.boost.org/doc/libs/1_45_0/doc/html/boost/program_options/typed_value.html#id903171-bb
   desc.add_options()
     ("help,h", "produce this help message")
     ("mode", po::value<std::string>()->default_value("euler"), "numerical solver")
     ("draw", po::bool_switch(&flag_draw), "whether to draw the geometry with ROOT's Event Display")
-    ("x", po::value<float>()->default_value(0.f), "initial beam x position")
-    ("y", po::value<float>()->default_value(0.f), "initial beam y position")
-    ("energy", po::value<float>()->default_value(1380.f), "beam energy position")
+    ("x", po::value<float>()->required(), "initial beam x position")
+    ("y", po::value<float>()->required(), "initial beam y position")
+    ("energy", po::value<float>()->required(), "beam energy position")
+    ("mass_interaction", po::value<float>()->required(), "modelled interaction mass [GeV]")
     ("nparticles", po::value<unsigned>()->default_value(1), "number of particles to generate on each beam")
     ("zcutoff", po::value<float>()->default_value(5000.f), "cutoff at which to apply the fake deflection");
       
@@ -496,6 +500,7 @@ int main(int argc, char **argv) {
   info.y = boost::any_cast<float>(vm["y"].value());
   info.energy = boost::any_cast<float>(vm["energy"].value());
   info.mass = 0.938; //GeV
+  info.mass_interaction = boost::any_cast<float>(vm["mass_interaction"].value()); //GeV
   info.nparticles = boost::any_cast<unsigned>(vm["nparticles"].value());
   info.zcutoff = boost::any_cast<float>(vm["zcutoff"].value());
   assert(info.zcutoff > 0);
