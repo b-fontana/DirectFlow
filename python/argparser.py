@@ -26,6 +26,12 @@ def add_args(parser, mode):
             help='Step size [cm].'
         )
         parser.add_argument(
+            '--mass_interaction',
+            type=float,
+            default=0.139,
+            help='Mass of the interaction TLorentzVector [GeV].'
+        )
+        parser.add_argument(
             '--mode',
             type=str,
             default='euler',

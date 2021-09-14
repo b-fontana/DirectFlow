@@ -50,8 +50,9 @@ def run(FLAGS):
     dlabel = dict(x=FIGDIMS[0]/2+3*STEPS[0],
                   y=FIGDIMS[1]-32*STEPS[1], **additional_kwargs)
 
-    figkw = {'y.axis_label': 'Counts'}
-    b.histogram(idx=0, data=np.histogram(df.data, bins=100),
+    figkw = {'y.axis_label': 'Counts',
+             'x_range': Range1d(0,1.5)}
+    b.histogram(idx=0, data=np.histogram(df.data, bins=5000),
                 color='blue', fig_kwargs=figkw)
     
     

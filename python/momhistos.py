@@ -15,7 +15,7 @@ def run(FLAGS):
     ##########################################################
     ######## Constants #######################################
     ##########################################################
-    NFRAMES=3
+    NFRAMES=4
     NFIGS=6
     FIGDIMS1 = 600, 600
     FIGDIMS2 = 800, 700
@@ -59,7 +59,9 @@ def run(FLAGS):
     figheights.extend([FIGDIMS2[1]])
     
     b = bkp.BokehPlot( [HTML_BASE_NAME + 'Cat' + str(x) + '.html' for x in range(NFRAMES)],
-                       nframes=NFRAMES, nfigs=NFIGS, nwidgets=0,
+                       nframes=NFRAMES,
+                       nfigs=[NFIGS if i!=NFRAMES-1 else 3 for i in range(NFRAMES)],
+                       nwidgets=[0 for _ in range(NFRAMES)],
                        fig_width=figwidths,
                        fig_height=figheights )
 
@@ -70,15 +72,18 @@ def run(FLAGS):
                   y=FIGDIMS1[1]-32*STEPS[1], **additional_kwargs)
 
     figkw = {'y.axis_label': 'Counts'}
-    # figkw.update({'x.axis_label': 'X momentum sum [GeV]'})
-    # b.histogram(idx=0, data=np.histogram(df.sumMomXAbs, bins=100),
-    #         color='orange', fig_kwargs=figkw)
-    # figkw.update({'x.axis_label': 'Y momentum sum [GeV]'})
-    # b.histogram(idx=1, data=np.histogram(df.sumMomYAbs, bins=100),
-    #         color='orange', fig_kwargs=figkw)
-    # figkw.update({'x.axis_label': 'Z momentum sum [GeV]'})
-    # b.histogram(idx=2, data=np.histogram(df.sumMomZ, bins=100),
-    #         color='orange', fig_kwargs=figkw)
+    figkw.update({'x.axis_label': 'X momentum sum [GeV]'})
+    b.histogram(idx=0, iframe=4,
+                data=np.histogram(df.sumMomXAbs, bins=100),
+                color='orange', fig_kwargs=figkw)
+    figkw.update({'x.axis_label': 'Y momentum sum [GeV]'})
+    b.histogram(idx=1, iframe=4,
+                data=np.histogram(df.sumMomYAbs, bins=100),
+                color='orange', fig_kwargs=figkw)
+    figkw.update({'x.axis_label': 'Z momentum sum [GeV]'})
+    b.histogram(idx=2, iframe=4,
+                data=np.histogram(df.sumMomZ, bins=100),
+                color='orange', fig_kwargs=figkw)
 
     dlatex = dict(x=FIGDIMS1[0]/2+3.*STEPS[0],
                   y=FIGDIMS1[1]-10*STEPS[1],
@@ -142,8 +147,8 @@ def run(FLAGS):
     ##########################################################
     #b.save_frame(nrows=3, ncols=3, show=True)
     b.save_frame(iframe=0, layout=[[5,3,4],[0,1,2]], show=True)
-    b.save_frame(iframe=1, layout=[[5,3,4],[0,1,2]], show=True)
-    b.save_frame(iframe=2, layout=[[5,3,4],[0,1,2]], show=True)
+    b.save_frame(iframe=1, layout=[[5,3,4],[0,1,2]], show=False)
+    b.save_frame(iframe=2, layout=[[5,3,4],[0,1,2]], show=False)
     #b.save_figs(path='.', mode='png')
 
     script, div = components( b.get_figure(8) )

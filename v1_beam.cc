@@ -31,6 +31,7 @@ public:
   float energy;
   float mass;
   float mass_interaction;
+  unsigned npartons;
   unsigned nparticles;
   float zcutoff;
 };
@@ -157,13 +158,15 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   std::string rounden = std::to_string(args.energy).substr(0,10);
   std::string roundsz = std::to_string(stepsize[mode]);
   std::string roundmint = std::to_string(args.mass_interaction).substr(0,8);
+  std::string roundnpartons = std::to_string(args.npartons).substr(0,8);
   std::replace( roundx.begin(), roundx.end(), '.', 'p');
   std::replace( roundy.begin(), roundy.end(), '.', 'p');
   std::replace( rounden.begin(), rounden.end(), '.', 'p');
   std::replace( roundsz.begin(), roundsz.end(), '.', 'p');
   std::replace( roundmint.begin(), roundmint.end(), '.', 'p');
+  std::replace( roundnpartons.begin(), roundnpartons.end(), '.', 'p');
   std::string str_initpos = "_" + roundx + "X_" + roundy + "Y_" + rounden + "En_";
-  std::string extra = roundsz + "SZ_" + roundmint + "MInt" ;
+  std::string extra = roundsz + "SZ_" + roundmint + "MInt_" + roundnpartons + "NP" ;
 
   std::string filename("data/track" + suf[mode] + str_initpos + extra + ".csv");
   std::string filename2("data/histo" + suf[mode] + str_initpos + extra + ".csv");
@@ -180,15 +183,15 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       for(unsigned i=0; i<batchSize_; ++i) {
 	//negative z side
 	p1[i].pos = XYZ( xdist.generate(), ydist.generate(), -args.zcutoff-50 ); // cm //-7000
-	p1[i].mom = XYZ(0.0, 0.0, args.energy); // GeV/c
+	p1[i].mom = XYZ(0.0, 0.0, args.energy / static_cast<float>(args.npartons)); // GeV/c
 	p1[i].mass = args.mass; // GeV/c^2
-	p1[i].energy = args.energy; //TMath::Sqrt(particle.mom.Mag2() + particle.mass*particle.mass);
+	p1[i].energy = args.energy / static_cast<float>(args.npartons);
 	p1[i].charge = +1;
 	//positive z side
 	p2[i].pos = XYZ( xdist.generate(), ydist.generate(), args.zcutoff+50 ); // cm //7000
-	p2[i].mom = XYZ(0.0, 0.0, -args.energy); // GeV/c
+	p2[i].mom = XYZ(0.0, 0.0, -args.energy / static_cast<float>(args.npartons)); // GeV/c
 	p2[i].mass = args.mass; // GeV/c^2
-	p2[i].energy = args.energy;
+	p2[i].energy = args.energy / static_cast<float>(args.npartons);
 	p2[i].charge = +1;
       }
 
@@ -357,7 +360,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 			    itMomenta1[ix][id1].Y(),
 			    itMomenta1[ix][id1].Z(), args.mass);
 	//print_pos_4D("momLor1", momLorentz1);
-	
+
 	TLorentzVector momLorentz2;
 	momLorentz2.SetXYZM(itMomenta2[ix][id2].X(),
 			    itMomenta2[ix][id2].Y(),
@@ -374,21 +377,41 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	float boltzgen = boltzdist.generate();
 	float etagen = etadist.generate();
 	float phigen = phidist.generate();
+	// std::cout << boltzgen << std::endl;
+	// std::cout << etagen << std::endl;
+	// std::cout << phigen << std::endl;
+	// std::exit(0);
+
 	boltzPT.SetPtEtaPhiM(boltzgen,
 			     etagen, phigen,
 			     mass_pion);
 
+	// std::cout << std::endl;
+	// print_pos_4D("boltz before boost", boltzPT);
+	// std::cout << "boltz pt: " << TMath::Sqrt(boltzPT.Px()*boltzPT.Px() + boltzPT.Py()*boltzPT.Py()) << std::endl;
+
 	TVector3 bVector = momSum.BoostVector();
 	boltzPT.Boost(bVector);
+	// print_pos("bVector", bVector);
+
+	// float nNucleons = 200.f;
+	// TLorentzVector kickPT;
+	// kickPT.SetPxPyPzE(momSum.Px()/nNucleons,
+	// 		  momSum.Py()/nNucleons,
+	// 		  momSum.Pz()/nNucleons,
+	// 		  args.energy / static_cast<float>(args.npartons));
+	// TLorentzVector totalPT = boltzPT + kickPT;
+	// std::cout << std::endl;
+	// print_pos_4D("kick", kickPT);
+	// print_pos_4D("boltz", boltzPT);
+	// print_pos_4D("total", totalPT);
+
+	// std::cout << std::endl;
+	// std::cout << "kick pt: " << TMath::Sqrt(kickPT.Px()*kickPT.Px() + kickPT.Py()*kickPT.Py()) << ", " << TMath::Sqrt(kickPT.X()*kickPT.X() + kickPT.Y()*kickPT.Y()) << std::endl;
+	// std::cout << "boltz pt: " << TMath::Sqrt(boltzPT.Px()*boltzPT.Px() + boltzPT.Py()*boltzPT.Py()) << ", " << TMath::Sqrt(boltzPT.X()*boltzPT.X() + boltzPT.Y()*boltzPT.Y()) << std::endl;
+	// std::exit(0);
+	float totalPhi = boltzPT.Phi();
 	
-	float nNucleons = 200.f;
-	TLorentzVector kickPT;
-	kickPT.SetPxPyPzE(momSum.Px()/nNucleons,
-			  momSum.Py()/nNucleons,
-			  momSum.Pz()/nNucleons, args.energy);
-	TLorentzVector totalPT = boltzPT + kickPT;
-	
-	float totalPhi = totalPT.Phi();
 	if(totalPhi<0)
 	  totalPhi = 2*M_PI + totalPhi; //convert from [-Pi;Pi[ to [0;2Pi[
 		
@@ -454,6 +477,7 @@ int main(int argc, char **argv) {
     ("y", po::value<float>()->required(), "initial beam y position")
     ("energy", po::value<float>()->required(), "beam energy position")
     ("mass_interaction", po::value<float>()->required(), "modelled interaction mass [GeV]")
+    ("npartons", po::value<unsigned>()->required(), "number of partons in a proton colliding")
     ("nparticles", po::value<unsigned>()->default_value(1), "number of particles to generate on each beam")
     ("zcutoff", po::value<float>()->default_value(5000.f), "cutoff at which to apply the fake deflection");
       
@@ -501,6 +525,7 @@ int main(int argc, char **argv) {
   info.energy = boost::any_cast<float>(vm["energy"].value());
   info.mass = 0.938; //GeV
   info.mass_interaction = boost::any_cast<float>(vm["mass_interaction"].value()); //GeV
+  info.npartons = boost::any_cast<unsigned>(vm["npartons"].value()); //GeV
   info.nparticles = boost::any_cast<unsigned>(vm["nparticles"].value());
   info.zcutoff = boost::any_cast<float>(vm["zcutoff"].value());
   assert(info.zcutoff > 0);

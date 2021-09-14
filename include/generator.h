@@ -2,13 +2,17 @@
 #define GENERATOR_H
 
 #include "TF1.h"
+#include "TRandom.h"
 #include <random>
 #include <fstream>
 
 template <class T>
 class Generator {
 public:
-  Generator() { mRng = std::mt19937( mSeeder() ); }
+  Generator() {
+    mRng = std::mt19937( mSeeder() );
+    gRandom->SetSeed(0);
+  }
 
   virtual T generate() = 0;
 
