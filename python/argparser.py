@@ -32,6 +32,13 @@ def add_args(parser, mode):
             help='Mass of the interaction TLorentzVector [GeV].'
         )
         parser.add_argument(
+            '--npartons',
+            type=int,
+            default=1,
+            help='Number of partons (to scale the energy)',
+        )
+
+        parser.add_argument(
             '--mode',
             type=str,
             default='euler',

@@ -24,7 +24,7 @@ def run(FLAGS):
     HTML_BASE_NAME = os.path.join(BASE, os.path.basename(__file__)[:-3] + '_' + \
                                   str(FLAGS.x) + 'X_' + str(FLAGS.x) + 'Y_' + \
                                   str(FLAGS.energy) + 'En_' + \
-                                  str(FLAGS.step_size) + 'SZ_' \
+                                  str(FLAGS.step_size) + 'SZ_' + \
                                   str(FLAGS.npartons) + 'NP')
 
     ##########################################################
@@ -38,12 +38,12 @@ def run(FLAGS):
     search_str = os.path.join(BASE, 'data/histo_' + FLAGS.mode + '_' + posstr + '*.csv')
 
     l = glob.glob(search_str)
-    NFIGS = 2 * len(l) #phi and eta distributions
+    NFIGS = 2*len(l)
     print('Pattern: ', search_str)
     print('Number of files: ', NFIGS)
     running_var = []
     for f in l:
-        running_var.append( float(re.findall(r'.+_(.*)EnScale.+.csv', f)[0].replace('p', '.')) )
+        running_var.append( float(re.findall(r'.+_(.*)WScale.+.csv', f)[0].replace('p', '.')) )
 
     l = [ x for _,x in sorted(zip(running_var,l), key=lambda pair: pair[0]) ] #overwrite
     running_var = sorted(running_var)
@@ -63,10 +63,11 @@ def run(FLAGS):
     dlabel = dict(x=3*STEPS[0],
                   y=FIGDIMS[1]/2+10*STEPS[1], **additional_kwargs)
 
-    figkw = {'y.axis_label': 'Counts'}
+    figkw = {'x.axis_label': 'X [cm]',
+             'y.axis_label': 'Y [cm]'}
 
     dlatex = dict(x=3*STEPS[0],
-                  y=FIGDIMS[1]/2+36*STEPS[1],
+                  y=FIGDIMS[1]/2+42*STEPS[1],
                   x_units="screen",
                   y_units="screen",
                   text_font_size='10pt')
@@ -77,14 +78,7 @@ def run(FLAGS):
     def add_latex(idx):
         b.get_figure(idx).add_layout(
             LatexLabel(
-                text="E_{{scale}} = {}GeV".format(running_var[idx],5),
-                render_mode="css",
-                background_fill_alpha=0,
-                **dlatex
-            ) )
-        b.get_figure(idx+4).add_layout(
-            LatexLabel(
-                text="E_{{scale}} = {}GeV".format(running_var[idx],5),
+                text="W_{{scale}} = {}".format(running_var[idx],5),
                 render_mode="css",
                 background_fill_alpha=0,
                 **dlatex
@@ -94,19 +88,17 @@ def run(FLAGS):
         df = pd.read_csv( f )
 
         add_latex(idx)
-        
-        figkw.update({'x.axis_label': phistr + ' [rad]',
-                      'x_range': Range1d(0,2*np.pi)})
-        b.histogram(idx=idx,
-                    data=np.histogram(df.Phi, bins=100),
-                    color='purple', fig_kwargs=figkw)
 
-        figkw.update({'x.axis_label': etastr,
-                      })
-        figkw.pop('x_range')
-        b.histogram(idx=idx + len(l),
-                    data=np.histogram(df.Eta, bins=100),
-                    color='red', fig_kwargs=figkw)
+        #figkw.update({'x_range': Range1d(-1,1)})
+        b.histogram(idx=idx,
+                    data=np.histogram2d(df.XHit, df.YHit, bins=100),
+                    #style='quad%Viridis',
+                    fig_kwargs=figkw)
+
+        b.histogram(idx=idx+len(l),
+                    data=np.histogram2d(df.XHit, df.YHit, bins=100, range=[[-2,2],[-2,2]]),
+                    #style='quad%Viridis',
+                    fig_kwargs=figkw)
 
 
     ##########################################################
@@ -115,11 +107,6 @@ def run(FLAGS):
     b.save_frame(nrows=2, ncols=4, show=True)
     #b.save_frame(iframe=0, layout=[[5,3,4],[0,1,2]], show=True)
     #b.save_figs(path='.', mode='png')
-
-    script, div = components( b.get_figure(8) )
-    with open('histos.html', 'a') as f:
-        f.write(script)
-        
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
