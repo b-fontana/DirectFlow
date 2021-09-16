@@ -51,9 +51,9 @@ def run(FLAGS):
                   y=FIGDIMS[1]-32*STEPS[1], **additional_kwargs)
 
     figkw = {'y.axis_label': 'Counts',
-             'x_range': Range1d(0,1.5)}
-    b.histogram(idx=0, data=np.histogram(df.data, bins=5000),
-                color='blue', fig_kwargs=figkw)
+             'x_range': Range1d(0,0.65)}
+    b.histogram(idx=0, data=np.histogram(df.data, bins=200),
+                color='orange', fig_kwargs=figkw)
     
     
     ##########################################################

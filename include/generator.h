@@ -2,6 +2,8 @@
 #define GENERATOR_H
 
 #include "TF1.h"
+#include "TGraph.h"
+#include "TH1D.h"
 #include "TRandom.h"
 #include <random>
 #include <fstream>
@@ -96,6 +98,41 @@ private:
     y = pT*B/TMath::Power(1.0+(mT-m0)/(n*Temp),n);
     return y;
   }
+};
+
+template <class T>
+class FermiDistribution final : public Generator<T> {
+public:
+
+  FermiDistribution() : Generator<T>() {    
+
+    mFermiProbGraph = new TGraph();
+    mFermiProbGraph->Set(mNPoints);
+    
+    mDist = new TH1D("h_fermi_prob","h_fermi_prob",
+		     static_cast<int>(mNPoints*2.5), 0, 0.65);
+    
+    for(int i(0); i<mNPoints; i++)
+      mFermiProbGraph->SetPoint(i, mPtFermi[i], mProbFermi[i]);
+
+    for(int i(1); i<=mDist->GetNbinsX(); i++)
+      {
+	double pt_val = mDist->GetBinCenter(i);
+        double value  = mFermiProbGraph->Eval(pt_val);
+        if(value < 0.0) value = 0.0;
+        mDist->SetBinContent(i,value);
+      }
+  }
+
+  T generate() { return mDist->GetRandom(); }
+
+private:
+  TGraph* mFermiProbGraph;
+  TH1D* mDist;
+  
+  static constexpr int mNPoints = 71;
+  static constexpr double mPtFermi[mNPoints] = {0.0206,0.0272,0.0322,0.0361,0.0419,0.0485,0.0551,0.0614,0.0664,0.0707,0.0773,0.0831,0.0901,0.0959,0.104,0.114,0.122,0.131,0.135,0.141,0.149,0.16,0.168,0.178,0.185,0.194,0.203,0.209,0.213,0.218,0.225,0.231,0.245,0.252,0.259,0.267,0.275,0.282,0.289,0.295,0.304,0.309,0.316,0.323,0.33,0.338,0.346,0.353,0.363,0.371,0.377,0.384,0.394,0.403,0.411,0.425,0.438,0.448,0.461,0.476,0.49,0.505,0.519,0.533,0.551,0.565,0.579,0.592,0.609,0.624,0.638};
+  static constexpr double mProbFermi[mNPoints] = {0.195,0.356,0.461,0.572,0.761,0.963,1.18,1.4,1.58,1.73,1.94,2.14,2.33,2.51,2.67,2.83,2.92,2.99,3,3.01,2.98,2.93,2.88,2.83,2.79,2.72,2.67,2.62,2.6,2.58,2.53,2.5,2.42,2.37,2.32,2.28,2.2,2.14,2.07,2.01,1.95,1.88,1.82,1.75,1.68,1.59,1.54,1.46,1.4,1.33,1.28,1.24,1.19,1.14,1.1,1.05,1.02,0.991,0.97,0.928,0.921,0.901,0.88,0.852,0.796,0.768,0.733,0.698,0.663,0.628,0.579};
 };
 
 #endif // GENERATOR_H

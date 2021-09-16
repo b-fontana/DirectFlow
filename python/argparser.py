@@ -50,7 +50,7 @@ def add_args(parser, mode):
         parser.add_argument(
             '--dataset',
             type=str,
-            choices=['boltz', 'gaus'],
+            choices=['boltz', 'gaus', 'fermi'],
             help='Distribution to inspect.'
         )
         

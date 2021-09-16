@@ -67,7 +67,8 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   //generate random positions around input positions
   NormalDistribution<double> xdist(args.x, args.width_scale * 0.1); //beam width of 1 millimeter
   NormalDistribution<double> ydist(args.y, args.width_scale * 0.1); //beam width of 1 millimeter
-  BoltzmannDistribution<float> boltzdist(1.f, 0.15, 4, 0.138);  //boltzdist.test("data/boltz.csv");
+  BoltzmannDistribution<float> boltzdist(1.f, 0.15, 4, 0.138);
+  FermiDistribution<float> fermidist; //fermidist.test("data/fermi.csv");
   UniformDistribution<float> phidist(-M_PI, M_PI);
   UniformDistribution<float> etadist(-2.f, 2.f);
   
@@ -291,6 +292,8 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	TVector3 last1Det = Globals::distanceToDetector * last1V.Unit();
 	xHit[i] = last1Det.Dot( uX1 );
 	yHit[i] = last1Det.Dot( uY1 );
+	print_pos("last1Det", last1Det);
+	std::exit(0);
 	psi1[i] = std::atan2( last1Y_, last1X_ ) + M_PI;
 	psi2[i] = std::atan2( last2Y_, last2X_ ) + M_PI;
 
