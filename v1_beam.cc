@@ -70,6 +70,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   BoltzmannDistribution<float> boltzdist(1.f, 0.15, 4, 0.138);
   FermiDistribution<float> fermidist; //fermidist.test("data/fermi.csv");
   UniformDistribution<float> phidist(-M_PI, M_PI);
+  UniformDistribution<float> thetadist(0, M_PI);
   UniformDistribution<float> etadist(-2.f, 2.f);
   
   Vec<Magnet> magnetInfo{
@@ -275,6 +276,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	  std::cout << "Angle1: " << check1.Angle(last1V) << std::endl;
 	  std::exit(0);
 	}
+
 	double last1X_ = last1_.Dot( uX1 );
 	double last1Y_ = last1_.Dot( uY1 );
 	
@@ -289,9 +291,27 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	double last2X_ = last2_.Dot( uX2 );
 	double last2Y_ = last2_.Dot( uY2 );
 
-	TVector3 last1Det = Globals::distanceToDetector * last1V.Unit();
+	//fermi momentum correction
+	float fermiMom = fermidist.generate();
+	Double_t fermiPhi = phidist.generate();
+	Double_t fermiTheta = thetadist.generate();
+	TVector3 fermiVec;
+	fermiVec.SetPtThetaPhi(1.0, fermiTheta, fermiPhi);
+	fermiVec *= fermiMom/fermiVec.Mag();
+	TLorentzVector last1VLtz;
+	last1VLtz.SetPxPyPzE(last1V.X(), last1V.Y(), last1V.Z(), args.energy);
+	TLorentzVector fermiVecLtz(fermiVec, args.energy);
+	print_pos_4D("fermiVecLtz before boost", fermiVecLtz);
+	TVector3 fermiBoost = last1VLtz.BoostVector();
+	print_pos("fermiBoost", fermiBoost);
+	fermiVecLtz.Boost( fermiBoost );
+	
+	TVector3 last1Det = Globals::distanceToDetector * (fermiVecLtz.Vect()).Unit();
 	xHit[i] = last1Det.Dot( uX1 );
 	yHit[i] = last1Det.Dot( uY1 );
+	std::cout << fermiMom << ", " << fermiTheta << ", " << fermiPhi << std::endl;
+	print_pos("last1", last1V);
+	print_pos_4D("fermiVecLtz after boost", fermiVecLtz);
 	print_pos("last1Det", last1Det);
 	std::exit(0);
 	psi1[i] = std::atan2( last1Y_, last1X_ ) + M_PI;
