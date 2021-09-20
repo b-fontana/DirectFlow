@@ -42,8 +42,10 @@ struct Globals {
   static constexpr float distanceToDetector = 11600; //cm
 };
   
-void double_rotation(const TVector3& v, std::pair<float,float> angles) {
+float calc_momentum(float en, float mass) {
+  return TMath::Sqrt(en*en - mass*mass);
 }
+
 
 unsigned size_last_batch(unsigned nbatches, unsigned nelems, unsigned batchSize) {
   return nelems-(nbatches-1)*batchSize;
@@ -184,13 +186,13 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       for(unsigned i=0; i<batchSize_; ++i) {
 	//negative z side
 	p1[i].pos = XYZ( xdist.generate(), ydist.generate(), -args.zcutoff-50 ); // cm //-7000
-	p1[i].mom = XYZ(0.0, 0.0, args.energy / static_cast<float>(args.npartons)); // GeV/c
+	p1[i].mom = XYZ(0.0, 0.0, calc_momentum(args.energy/static_cast<float>(args.npartons), args.mass) ); // GeV/c
 	p1[i].mass = args.mass; // GeV/c^2
 	p1[i].energy = args.energy / static_cast<float>(args.npartons);
 	p1[i].charge = +1;
 	//positive z side
 	p2[i].pos = XYZ( xdist.generate(), ydist.generate(), args.zcutoff+50 ); // cm //7000
-	p2[i].mom = XYZ(0.0, 0.0, args.energy_scale * -args.energy / static_cast<float>(args.npartons)); // GeV/c
+	p2[i].mom = XYZ(0.0, 0.0, args.energy_scale * -calc_momentum(args.energy/static_cast<float>(args.npartons), args.mass)); // GeV/c
 	p2[i].mass = args.mass; // GeV/c^2
 	p2[i].energy = args.energy / static_cast<float>(args.npartons);
 	p2[i].charge = +1;
@@ -268,28 +270,28 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	itMomenta2[i]   = tracks2[i]->momenta();
 	nStepsUsed2[i]  = tracks2[i]->steps_used();
 
-	XYZ last1_ = itPositions1[i].back();
-	TVector3 last1V(last1_.X(), last1_.Y(), last1_.Z());
+	XYZ last1Pos_ = itPositions1[i].back();
+	TVector3 last1PosV_(last1Pos_.X(), last1Pos_.Y(), last1Pos_.Z());
 	TVector3 check1(-p1[i].pos.X(), -p1[i].pos.Y(), args.zcutoff);
-	if( check1.Angle(last1V) > 1e-7 ) {
+	if( check1.Angle(last1PosV_) > 1e-7 ) {
 	  std::cout << "The trajectory is not as it should!" << std::endl;
-	  std::cout << "Angle1: " << check1.Angle(last1V) << std::endl;
+	  std::cout << "Angle1: " << check1.Angle(last1PosV_) << std::endl;
 	  std::exit(0);
 	}
 
-	double last1X_ = last1_.Dot( uX1 );
-	double last1Y_ = last1_.Dot( uY1 );
+	double last1X_ = last1Pos_.Dot( uX1 );
+	double last1Y_ = last1Pos_.Dot( uY1 );
 	
-	XYZ last2_ = itPositions2[i].back();
-	TVector3 last2V(last2_.X(), last2_.Y(), last2_.Z());
+	XYZ last2Pos_ = itPositions2[i].back();
+	TVector3 last2V(last2Pos_.X(), last2Pos_.Y(), last2Pos_.Z());
 	TVector3 check2(-p2[i].pos.X(), -p2[i].pos.Y(), -args.zcutoff);
 	if( check2.Angle(last2V) > 1e-7 ) {
 	  std::cout << "The trajectory is not as it should!" << std::endl;
 	  std::cout << "Angle2: " << check2.Angle(last2V) << std::endl;
 	  std::exit(0);
 	}
-	double last2X_ = last2_.Dot( uX2 );
-	double last2Y_ = last2_.Dot( uY2 );
+	double last2X_ = last2Pos_.Dot( uX2 );
+	double last2Y_ = last2Pos_.Dot( uY2 );
 
 	//fermi momentum correction
 	float fermiMom = fermidist.generate();
@@ -298,21 +300,24 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	TVector3 fermiVec;
 	fermiVec.SetPtThetaPhi(1.0, fermiTheta, fermiPhi);
 	fermiVec *= fermiMom/fermiVec.Mag();
-	TLorentzVector last1VLtz;
-	last1VLtz.SetPxPyPzE(last1V.X(), last1V.Y(), last1V.Z(), args.energy);
-	TLorentzVector fermiVecLtz(fermiVec, args.energy);
+
+	XYZ last1Mom_ = itMomenta1[i].back();
+	TLorentzVector last1MomLtz_;
+	last1MomLtz_.SetPxPyPzE(last1Mom_.X(), last1Mom_.Y(), last1Mom_.Z(), args.energy);
+	TLorentzVector fermiVecLtz(fermiVec, TMath::Sqrt(fermiVec.Mag2() + args.mass*args.mass));
+	std::cout << std::endl;
 	print_pos_4D("fermiVecLtz before boost", fermiVecLtz);
-	TVector3 fermiBoost = last1VLtz.BoostVector();
+	print_pos_4D("last1MomLtz before boost", last1MomLtz_);
+	TVector3 fermiBoost = last1MomLtz_.BoostVector();
 	print_pos("fermiBoost", fermiBoost);
 	fermiVecLtz.Boost( fermiBoost );
 	
 	TVector3 last1Det = Globals::distanceToDetector * (fermiVecLtz.Vect()).Unit();
 	xHit[i] = last1Det.Dot( uX1 );
 	yHit[i] = last1Det.Dot( uY1 );
-	std::cout << fermiMom << ", " << fermiTheta << ", " << fermiPhi << std::endl;
-	print_pos("last1", last1V);
+	std::cout << "Generated numbers: FermiPT " << fermiMom << ", Theta " << fermiTheta << ", Phi " << fermiPhi << std::endl;
 	print_pos_4D("fermiVecLtz after boost", fermiVecLtz);
-	print_pos("last1Det", last1Det);
+	print_pos("fermiLtzVector coordinates at detector", last1Det);
 	std::exit(0);
 	psi1[i] = std::atan2( last1Y_, last1X_ ) + M_PI;
 	psi2[i] = std::atan2( last2Y_, last2X_ ) + M_PI;
@@ -329,7 +334,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	
 	//check if the two particles "crossed"
 	//this catches number of iterations that are too small
-	assert(last1_.Z() > last2_.Z());
+	assert(last1Pos_.Z() > last2Pos_.Z());
 
 	float psi2_tmp = psi2[i]+M_PI>2*M_PI ? psi2[i]-M_PI : psi2[i]+M_PI;
 	psi_angles[i] = distance_two_angles(psi1[i], psi2_tmp);
