@@ -6,6 +6,9 @@
 #include "Math/Vector3D.h" // XYZVector
 
 using XYZ = ROOT::Math::XYZVector;
+using Polar = ROOT::Math::Polar3DVector;
+template <typename T> using Vec = std::vector<T>;
+template <typename T> using Vec2 = std::vector<std::vector<T>>;
 
 template<class T>
 inline void print_pos(std::string intro, T p) {
@@ -21,6 +24,15 @@ template<class T>
 inline T to_degrees(T a) {
   return a*360 / (2*M_PI);
 }
+
+template<class T>
+inline double local_distance(T a, T b) {
+  double xd = a.X()-b.X();
+  double yd = a.Y()-b.Y();
+  double zd = a.Z()-b.Z();
+  return TMath::Sqrt(xd*xd + yd*yd + zd*zd);
+}
+
 
 inline std::pair<float,float> calculate_angles_to_beamline(float x, float y, float z) {
   /*

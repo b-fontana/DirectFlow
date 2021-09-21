@@ -256,110 +256,31 @@ Track SimParticle::track_rungekutta4(const MagnetSystem& magnets, double scale)
 
 Track SimParticle::track_straight()
 { 
-  double charge = mParticle.charge * mEcharge; // C = A*s
-
-  Ltz initLorentzVec( mParticle.mom.X(), mParticle.mom.Y(), mParticle.mom.Z(), mParticle.mass );
-  XYZ partPos = mParticle.pos; //cm
-  XYZ partMom = initLorentzVec.Vect(); // Gev/c
-  // p (GeV/c) = beta (c) *gamma*m0 (GeV/c2) -> (cm/s)
-  XYZ partVel = calc_relativistic_velocity(partMom, initLorentzVec.Gamma(), mParticle.mass);
-
-  double deltaT = mStepSize / ( mSpeedOfLight * initLorentzVec.Beta() ); // s
-
-  Vec<double> energies;
-  Vec<XYZ> positions;
-  Vec<XYZ> momenta;
-  energies.reserve(mNsteps);
-  positions.reserve(mNsteps);
-  momenta.reserve(mNsteps);
+  XYZ partPos = mParticle.pos; // cm
+  XYZ partMom = mParticle.mom; // Gev/c
+  
+  Vec<double> energies; energies.reserve(mNsteps);
+  Vec<XYZ> positions;   positions.reserve(mNsteps);
+  Vec<XYZ> momenta;     momenta.reserve(mNsteps);
 
   unsigned nStepsUsed = 0;
 
-  bool deviation_done = false;
-
   while(nStepsUsed<mNsteps)
     {
-      positions.push_back( partPos);
+      positions.push_back( partPos );
       momenta.push_back( partMom );
-
-      // direction to move without magnetic field in cm
-      XYZ posIncr = partMom * ( mStepSize / TMath::Sqrt(partMom.Mag2()) );
-      //XYZ posIncr = partMom * mStepSize;
-
-      // new position after deltaT without magnetic field
-      XYZ partPosNext = partPos + posIncr;
-      // center of begin and stop vector without magnetic field
-      XYZ partPosMid = (partPos + partPosNext) * 0.5;
+      energies.push_back( TMath::Sqrt(partMom.Mag2() + mParticle.mass*mParticle.mass) );
       
-      XYZ Bfield = magnets.field(partPosMid, scale);
-
-      if(Bfield.Mag2() == 0.0) {
-	// partPos = partPosNext;
-	
-	//FAKE DEFLECTION, FAKE FORCE
-	if( std::abs(partPos.Z()) < zcutoff and !deviation_done)
-	  {
-	    if(partPos.Z()>0)
-	      partPos.SetXYZ(partPos.X(), partPos.Y(), zcutoff); //ensure it sits exactly at zcutoff
-	    else
-	      partPos.SetXYZ(partPos.X(), partPos.Y(), -zcutoff); //ensure it sits exactly at zcutoff
-
-	    
-	    // float distToIP = std::sqrt( partPos.Mag2() ); //IP define to be at (0,0,0)
-	    // float angle = std::acos( distCutoff / disitToIP );
-	    XYZ vectorDir = -1 * partPos / TMath::Sqrt( partPos.Mag2() );
-	
-	    // F = (dp/dt)
-	    XYZ partMomNext = vectorDir * TMath::Sqrt( partMom.Mag2() );
-	  
-	    double mag0 = TMath::Sqrt(partMom.Mag2());
-	    double mag1 = TMath::Sqrt(partMomNext.Mag2());
-	    partMomNext *= mag0 / mag1; // make sure that total momentum doesn't change
-
-	    XYZ momDelta = partMomNext * ( mStepSize / mag1); // direction to move with magnetic field in cm
-	    partPos += momDelta; // new position after deltaT with magnetic field
-
-	    partMom = partMomNext;
-
-	    deviation_done = true;
-	  }
-	else
-	  partPos = partPosNext;
-	////////////////////////////////////////////////
-      }
-	  
-      else
-	{
-	  // F = q*v X B
-	  XYZ force = calc_lorentz_force(charge, partVel, Bfield); // (A*s)*(cm/s)*(kg/(A*s*s)) = (cm*kg)/(s*s)
-
-	  // F = (dp/dt)
-	  XYZ forceDelta = force * deltaT * 1.8708026E16; // (cm*kg)/(s*s) * delta_p (cm*kg)/s -> (GeV/c)
-	  XYZ partMomNext = partMom + forceDelta;
-	  
-	  double mag0 = TMath::Sqrt(partMom.Mag2());
-	  double mag1 = TMath::Sqrt(partMomNext.Mag2());
-	  partMomNext *= mag0 / mag1; // make sure that total momentum doesn't change
-
-	  XYZ momDelta = partMomNext * ( mStepSize / mag1); // direction to move with magnetic field in cm
-	  //XYZ momDelta = partMomNext * mStepSize; // direction to move with magnetic field in cm
-	  partPos += momDelta; // new position after deltaT with magnetic field
-
-	  partMom = partMomNext;
-
-	  // p (GeV/c) = beta (c) *gamma*m0 (GeV/c2) (cm/s)
-	  Ltz tmpLorentz( partMom.X(), partMom.Y(), partMom.Z(), mParticle.mass );
-	  partVel = calc_relativistic_velocity(partMom, tmpLorentz.Gamma(), mParticle.mass);
-	}
-
-      energies.push_back( TMath::Sqrt(partMom.Mag2() + 0.938*0.938) );
+      XYZ posIncr = partMom.Unit() * mStepSize;
+      partPos += posIncr;      
       
       ++nStepsUsed;
 
-      if(fabs(partPos.X()) > fabs(mParticle.pos.X()) or fabs(partPos.Y()) > fabs(mParticle.pos.Y())
-      	 or fabs(partPos.Z()) > fabs(mParticle.pos.Z()) ) {
+      double xd = partPos.X()*partPos.X();
+      double yd = partPos.Y()*partPos.Y();
+      double zd = partPos.Z()*partPos.Z();
+      if( TMath::Sqrt(xd + yd + zd) > 5.5)
       	break;
-      }
     }
 
   return Track(nStepsUsed, energies, positions, momenta);

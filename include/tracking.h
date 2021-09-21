@@ -76,7 +76,11 @@ public:
 
   const Track& track(const MagnetSystem&, tracking::TrackMode, double, float) &;
   //no copies of big objects, so forbid calling 'track()' on a temporary object
+  
+  //temporary, doesnt follow class approach
+  Track track_straight(); 
   Track track(const MagnetSystem&, tracking::TrackMode, double) && = delete;
+  //Track track_straight() && = delete;
     
 private:
   Particle mParticle;

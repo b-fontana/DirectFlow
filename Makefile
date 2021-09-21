@@ -1,5 +1,5 @@
 CC = g++
-EXEC = v1_beam.exe
+EXEC = collision_prob.exe #basename must match the name of the *.cc file containing the main
 RM = rm -r
 
 BASEDIR := $(shell pwd)
@@ -25,7 +25,7 @@ OPENGLFLAGS = -L/usr/lib/x86_64-linux-gnu/ -lGL -lGLX -lGLdispatch
 BOOSTFLAGS = -L/usr/local/boost/lib/ -lboost_program_options -I/usr/local/boost/include/
 EXTRAFLAGS = $(ROOTFLAGS) $(OPENGLFLAGS) $(BOOSTFLAGS)
 
-SRCS := $(wildcard *.cc) \
+SRCS := $(basename $(EXEC)).cc \
 	$(wildcard $(SRCDIR)/*.cc)
 
 OBJS := $(patsubst %.cc, %.o, $(SRCS))
