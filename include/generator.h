@@ -21,7 +21,7 @@ public:
   void test(std::string filename, unsigned niters=100000) {
     std::fstream filetest;
     filetest.open(filename, std::ios_base::out);
-    filetest << "data" << std::endl;
+    filetest << "data" << std::findendl;
     for(unsigned i = 0; i<niters; ++i)
       filetest << generate() << std::endl;
     filetest.close();
