@@ -38,7 +38,7 @@ def run(FLAGS):
     search_str = os.path.join(BASE, 'data/histo_' + FLAGS.mode + '_' + posstr + '*.csv')
 
     l = glob.glob(search_str)
-    NFIGS = 2*len(l)
+    NFIGS = 4*len(l) + 2
     print('Pattern: ', search_str)
     print('Number of files: ', NFIGS)
     running_var = []
@@ -66,8 +66,8 @@ def run(FLAGS):
     figkw = {'x.axis_label': 'X [cm]',
              'y.axis_label': 'Y [cm]'}
 
-    dlatex = dict(x=3*STEPS[0],
-                  y=FIGDIMS[1]/2+42*STEPS[1],
+    dlatex = dict(x=FIGDIMS[0]/2-1*STEPS[0],
+                  y=FIGDIMS[1]/2+36*STEPS[1],
                   x_units="screen",
                   y_units="screen",
                   text_font_size='10pt')
@@ -78,34 +78,77 @@ def run(FLAGS):
     def add_latex(idx):
         b.get_figure(idx).add_layout(
             LatexLabel(
-                text="W_{{scale}} = {}".format(running_var[idx],5),
+                text="W_{{scale}} = {}".format(running_var[(idx-ashift)%len(l)],5),
                 render_mode="css",
                 background_fill_alpha=0,
                 **dlatex
             ) )
 
+    ashift = 2
     for idx,f in enumerate(l):
         df = pd.read_csv( f )
 
-        add_latex(idx)
+        add_latex(ashift+idx)
+        add_latex(ashift+idx+len(l))
+        add_latex(ashift+idx+2*len(l))
+        add_latex(ashift+idx+3*len(l))
+        
+        limit = 4
+        climbefore, climafter = 2500, 500
 
-        #figkw.update({'x_range': Range1d(-1,1)})
-        b.histogram(idx=idx,
-                    data=np.histogram2d(df.XHit, df.YHit, bins=100),
+        if 'y_range' in figkw:
+            figkw.pop('y_range')
+        figkw.update({'title': 'Before the boost'})
+        b.histogram(idx=ashift+idx,
+                    data=np.histogram2d(df.XHitNoBoost, df.YHitNoBoost, bins=100,
+                                        range=[[-limit,limit],[-limit,limit]]),
                     #style='quad%Viridis',
                     fig_kwargs=figkw)
 
-        b.histogram(idx=idx+len(l),
-                    data=np.histogram2d(df.XHit, df.YHit, bins=100, range=[[-2,2],[-2,2]]),
+        figkw.update({'title': 'After the boost'})
+        b.histogram(idx=ashift+idx+len(l),
+                    data=np.histogram2d(df.XHit, df.YHit, bins=100,
+                                        range=[[-limit,limit],[-limit,limit]]),
                     #style='quad%Viridis',
                     fig_kwargs=figkw)
+        
+        figkw.update({'title': 'Before the boost',
+                      'y.axis_label': 'Counts',
+                      'y_range': Range1d(0,climbefore)})
+        b.histogram(idx=ashift+idx+2*len(l),
+                    data=np.histogram(df.XHitNoBoost, bins=100,
+                                      range=[-limit,limit]),
+                    color='red',
+                    fig_kwargs=figkw)
 
+        figkw.update({'title': 'After the boost',
+                      'y_range': Range1d(0,climafter)})
+        b.histogram(idx=ashift+idx+3*len(l),
+                    data=np.histogram(df.XHit, bins=100,
+                                      range=[-limit,limit]),
+                    color='red',
+                    fig_kwargs=figkw)
+
+        
+    figkw.update({'x.axis_label': 'Pz [GeV]',
+                  'y.axis_label': 'Counts',
+                  'title': 'Before the boost'})
+    if 'y_range' in figkw:
+        figkw.pop('y_range')
+    b.histogram(idx=0,
+                data=np.histogram(df.FermiPzBeforeBoost, bins=100),
+                fig_kwargs=figkw)
+    figkw.update({'title': 'After the boost'})
+    b.histogram(idx=1,
+                data=np.histogram(df.FermiPzAfterBoost, bins=100),
+                fig_kwargs=figkw)
 
     ##########################################################
     ######## Saving ##########################################
     ##########################################################
-    b.save_frame(nrows=2, ncols=4, show=True)
-    #b.save_frame(iframe=0, layout=[[5,3,4],[0,1,2]], show=True)
+    #b.save_frame(nrows=5, ncols=4, show=True)
+    b.save_frame(iframe=0, layout=[[0,1],[2,3,4,5],[10,11,12,13],[6,7,8,9],[14,15,16,17]],
+                 show=True)
     #b.save_figs(path='.', mode='png')
 
 if __name__ == '__main__':

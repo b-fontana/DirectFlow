@@ -31,6 +31,8 @@ public:
   float energy;
   float energy_scale;
   float width_scale;
+  float yshift;
+  float fermi_shift;
   float mass;
   float mass_interaction;
   unsigned npartons;
@@ -62,15 +64,16 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 
   double Bscale = 1.;
   XYZ origin(0.f, 0.f, 0.f);
-  std::array<unsigned, tracking::TrackMode::NMODES> nsteps = {{30000, 13000 }};
-  std::array<double, tracking::TrackMode::NMODES> stepsize = {{ static_cast<double>(args.zcutoff)/500., 1. }};
-  std::array<std::string, tracking::TrackMode::NMODES> suf = {{ "_euler", "_rk4" }};
+  const unsigned nmodes = tracking::TrackMode::NMODES;
+  std::array<unsigned, nmodes> nsteps = {{30000, 13000 }};
+  std::array<double, nmodes> stepsize = {{ static_cast<double>(args.zcutoff)/500., 1. }};
+  std::array<std::string, nmodes> suf = {{ "_euler", "_rk4" }};
     
   //generate random positions around input positions
   NormalDistribution<double> xdist(args.x, args.width_scale * 0.1); //beam width of 1 millimeter
-  NormalDistribution<double> ydist(args.y, args.width_scale * 0.1); //beam width of 1 millimeter
+  NormalDistribution<double> ydist(args.y + args.yshift, args.width_scale * 0.1); //beam width of 1 millimeter
   BoltzmannDistribution<float> boltzdist(1.f, 0.15, 4, 0.138);
-  FermiDistribution<float> fermidist; //fermidist.test("data/fermi.csv");
+  FermiDistribution<float> fermidist; fermidist.test("data/fermi.csv");
   UniformDistribution<float> phidist(-M_PI, M_PI);
   UniformDistribution<float> thetadist(0, M_PI);
   UniformDistribution<float> etadist(-2.f, 2.f);
@@ -157,6 +160,8 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   std::string rounden = std::to_string(args.energy).substr(0,10);
   std::string roundens = std::to_string(args.energy_scale).substr(0,5);
   std::string roundws = std::to_string(args.width_scale).substr(0,5);
+  std::string roundys = std::to_string(args.yshift).substr(0,5);
+  std::string roundfs = std::to_string(args.fermi_shift).substr(0,5);
   std::string roundsz = std::to_string(stepsize[mode]);
   std::string roundmint = std::to_string(args.mass_interaction).substr(0,8);
   std::string roundnpartons = std::to_string(args.npartons).substr(0,8);
@@ -165,10 +170,12 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   std::replace( rounden.begin(), rounden.end(), '.', 'p');
   std::replace( roundens.begin(), roundens.end(), '.', 'p');
   std::replace( roundws.begin(), roundws.end(), '.', 'p');
+  std::replace( roundfs.begin(), roundws.end(), '.', 'p');
+  std::replace( roundys.begin(), roundys.end(), '.', 'p');
   std::replace( roundsz.begin(), roundsz.end(), '.', 'p');
   std::replace( roundmint.begin(), roundmint.end(), '.', 'p');
   std::replace( roundnpartons.begin(), roundnpartons.end(), '.', 'p');
-  std::string str_initpos = "_" + roundx + "X_" + roundy + "Y_" + rounden + "En_" + roundens + "EnScale_" + roundws + "WScale_";
+  std::string str_initpos = "_" + roundx + "X_" + roundy + "Y_" + rounden + "En_" + roundens + "EnScale_" + roundws + "WScale_" + roundys + "YShift_" + roundfs + "FShift_";
   std::string extra = roundsz + "SZ_" + roundmint + "MInt_" + roundnpartons + "NP" ;
 
   std::string filename("data/track" + suf[mode] + str_initpos + extra + ".csv");
@@ -226,8 +233,9 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       Vec2<XYZ> itMomenta1(batchSize_), itMomenta2(batchSize_);
       Vec<unsigned> nStepsUsed1(batchSize_), nStepsUsed2(batchSize_);
 
-      Vec<float> xHit(batchSize_);
-      Vec<float> yHit(batchSize_);
+      Vec<float> fermiPzBeforeBoost(batchSize_), fermiPzAfterBoost(batchSize_);
+      Vec<float> xHit(batchSize_), xHitNoBoost(batchSize_);
+      Vec<float> yHit(batchSize_), yHitNoBoost(batchSize_);
       Vec<float> psi1(batchSize_);
       Vec<float> psi2(batchSize_);
       Vec<unsigned> cat(batchSize_, 99);
@@ -293,6 +301,11 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	double last2X_ = last2Pos_.Dot( uX2 );
 	double last2Y_ = last2Pos_.Dot( uY2 );
 
+	//hits distribution without fermi boost
+	TVector3 last1Det = Globals::distanceToDetector * last1PosV_.Unit();
+	xHitNoBoost[i] = last1Det.Dot( uX1 );
+	yHitNoBoost[i] = last1Det.Dot( uY1 );
+
 	//fermi momentum correction
 	float fermiMom = fermidist.generate();
 	Double_t fermiPhi = phidist.generate();
@@ -300,25 +313,29 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	TVector3 fermiVec;
 	fermiVec.SetPtThetaPhi(1.0, fermiTheta, fermiPhi);
 	fermiVec *= fermiMom/fermiVec.Mag();
+	fermiVec.SetY(fermiVec.Y() + args.fermi_shift);
 
 	XYZ last1Mom_ = itMomenta1[i].back();
 	TLorentzVector last1MomLtz_;
 	last1MomLtz_.SetPxPyPzE(last1Mom_.X(), last1Mom_.Y(), last1Mom_.Z(), args.energy);
+
 	TLorentzVector fermiVecLtz(fermiVec, TMath::Sqrt(fermiVec.Mag2() + args.mass*args.mass));
-	std::cout << std::endl;
-	print_pos_4D("fermiVecLtz before boost", fermiVecLtz);
-	print_pos_4D("last1MomLtz before boost", last1MomLtz_);
+	//std::cout << std::endl;
+	//print_pos_4D("fermiVecLtz before boost", fermiVecLtz);
+	//print_pos_4D("last1MomLtz before boost", last1MomLtz_);
 	TVector3 fermiBoost = last1MomLtz_.BoostVector();
-	print_pos("fermiBoost", fermiBoost);
+	//print_pos("fermiBoost", fermiBoost);
+	fermiPzBeforeBoost[i] = fermiVecLtz.Pz();
 	fermiVecLtz.Boost( fermiBoost );
+	fermiPzAfterBoost[i] = fermiVecLtz.Pz();
 	
-	TVector3 last1Det = Globals::distanceToDetector * (fermiVecLtz.Vect()).Unit();
+	last1Det = Globals::distanceToDetector * (fermiVecLtz.Vect()).Unit();
 	xHit[i] = last1Det.Dot( uX1 );
 	yHit[i] = last1Det.Dot( uY1 );
-	std::cout << "Generated numbers: FermiPT " << fermiMom << ", Theta " << fermiTheta << ", Phi " << fermiPhi << std::endl;
-	print_pos_4D("fermiVecLtz after boost", fermiVecLtz);
-	print_pos("fermiLtzVector coordinates at detector", last1Det);
-	std::exit(0);
+	//std::cout << "Generated numbers: FermiPT " << fermiMom << ", Theta " << fermiTheta << ", Phi " << fermiPhi << std::endl;
+	// print_pos_4D("fermiVecLtz after boost", fermiVecLtz);
+	// print_pos("fermiLtzVector coordinates at detector", last1Det);
+	//std::exit(0);
 	psi1[i] = std::atan2( last1Y_, last1X_ ) + M_PI;
 	psi2[i] = std::atan2( last2Y_, last2X_ ) + M_PI;
 
@@ -385,7 +402,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	unsigned id2 = get_index_closer_to_origin(itPositions2[ix], minelem);
 	
 	if(ix==0 and ibatch==0)
-	  file2 << "iBatch,Idx,sumMomX,sumMomY,sumMomZ,XHit,YHit,PsiA,PsiB,cat1,Psi,Phi,Eta,Cos" << std::endl;
+	  file2 << "iBatch,Idx,sumMomX,sumMomY,sumMomZ,FermiPzBeforeBoost,FermiPzAfterBoost,XHitNoBoost,YHitNoBoost,XHit,YHit,PsiA,PsiB,cat1,Psi,Phi,Eta,Cos" << std::endl;
 	
 	TLorentzVector momLorentz1;
 	momLorentz1.SetXYZM(itMomenta1[ix][id1].X(),
@@ -458,6 +475,10 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	      << std::to_string( momSum.Px() ) << ","
 	      << std::to_string( momSum.Py() ) << ","
 	      << std::to_string( momSum.Pz() ) << ","
+	      << std::to_string( fermiPzBeforeBoost[ix] ) << ","
+	      << std::to_string( fermiPzAfterBoost[ix] ) << ","
+	      << std::to_string( xHitNoBoost[ix] ) << ","
+	      << std::to_string( yHitNoBoost[ix] ) << ","
 	      << std::to_string( xHit[ix] ) << ","
 	      << std::to_string( yHit[ix] ) << ","
 	      << std::to_string( psi1[ix] ) << ","
@@ -517,6 +538,8 @@ int main(int argc, char **argv) {
     ("energy", po::value<float>()->required(), "beam energy position")
     ("energy_scale", po::value<float>()->default_value(1.f), "factor to scale the energy of the right beam")
     ("width_scale", po::value<float>()->default_value(1.f), "factor to scale the width of both beams")
+    ("yshift", po::value<float>()->default_value(0.f), "factor to shift the y central value of the beam")
+    ("fermi_shift", po::value<float>()->default_value(0.f), "factor to shift fermi momentum ")
     ("mass_interaction", po::value<float>()->default_value(0.938), "modelled interaction mass [GeV]")
     ("npartons", po::value<unsigned>()->default_value(1), "number of partons in a proton colliding")
     ("nparticles", po::value<unsigned>()->default_value(1), "number of particles to generate on each beam")
@@ -566,6 +589,8 @@ int main(int argc, char **argv) {
   info.energy = boost::any_cast<float>(vm["energy"].value());
   info.energy_scale = boost::any_cast<float>(vm["energy_scale"].value());
   info.width_scale = boost::any_cast<float>(vm["width_scale"].value());
+  info.yshift = boost::any_cast<float>(vm["yshift"].value());
+  info.fermi_shift = boost::any_cast<float>(vm["fermi_shift"].value());
   info.mass = 0.938; //GeV
   info.mass_interaction = boost::any_cast<float>(vm["mass_interaction"].value()); //GeV
   info.npartons = boost::any_cast<unsigned>(vm["npartons"].value()); //GeV

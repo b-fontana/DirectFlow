@@ -37,6 +37,12 @@ def add_args(parser, mode):
             default=1,
             help='Number of partons (to scale the energy)',
         )
+        parser.add_argument(
+            '--fermi_shifts',
+            type=float,
+            nargs='+',
+            help='Shifts in the Y axis applied to the fermi distribution [MeV]',
+        )
 
         parser.add_argument(
             '--mode',
