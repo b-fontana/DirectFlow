@@ -254,34 +254,3 @@ Track SimParticle::track_rungekutta4(const MagnetSystem& magnets, double scale)
   return Track(nStepsUsed, energies, positions, momenta);
 }
 
-Track SimParticle::track_straight()
-{ 
-  XYZ partPos = mParticle.pos; // cm
-  XYZ partMom = mParticle.mom; // Gev/c
-  
-  Vec<double> energies; energies.reserve(mNsteps);
-  Vec<XYZ> positions;   positions.reserve(mNsteps);
-  Vec<XYZ> momenta;     momenta.reserve(mNsteps);
-
-  unsigned nStepsUsed = 0;
-
-  while(nStepsUsed<mNsteps)
-    {
-      positions.push_back( partPos );
-      momenta.push_back( partMom );
-      energies.push_back( TMath::Sqrt(partMom.Mag2() + mParticle.mass*mParticle.mass) );
-      
-      XYZ posIncr = partMom.Unit() * mStepSize;
-      partPos += posIncr;      
-      
-      ++nStepsUsed;
-
-      double xd = partPos.X()*partPos.X();
-      double yd = partPos.Y()*partPos.Y();
-      double zd = partPos.Z()*partPos.Z();
-      if( TMath::Sqrt(xd + yd + zd) > 5.5)
-      	break;
-    }
-
-  return Track(nStepsUsed, energies, positions, momenta);
-}

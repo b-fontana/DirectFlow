@@ -20,16 +20,17 @@
 #include "TStyle.h"
 #include "TRandom.h"
 
+#include <stdio.h>
+
 struct InputArgs {
 public:
-  bool draw;
-  double energy;
-  double mass;
+  long double energy;
+  long double mass;
   unsigned nparticles;
 };
 
-double calculate_intersection_distance(const Vec<XYZ>& p1, const Vec<XYZ>& p2,
-				       unsigned s, double t, double stepSize) {
+long double calculate_intersection_distance(const Vec<XYZ>& p1, const Vec<XYZ>& p2,
+				       unsigned s, long double t, long double stepSize) {
 
   unsigned nMatches(0);
   for(unsigned i(0); i<s; ++i) 
@@ -37,11 +38,91 @@ double calculate_intersection_distance(const Vec<XYZ>& p1, const Vec<XYZ>& p2,
       if( local_distance(p1[i], p2[i]) < t )
 	++nMatches;
     }
-  return static_cast<double>(nMatches)*stepSize;
+  return static_cast<long double>(nMatches);
 }
 
 unsigned size_last_batch(unsigned nbatches, unsigned nelems, unsigned batchSize) {
   return nelems-(nbatches-1)*batchSize;
+}
+
+long double track_straight(XYZ pos1, XYZ mom1,
+			XYZ pos2, XYZ mom2,
+			long double step, unsigned nSteps)
+{
+  XYZ partPos1 = pos1; // cm
+  XYZ partMom1 = mom1; // Gev/c
+  XYZ partPos2 = pos2; // cm
+  XYZ partMom2 = mom2; // Gev/c
+
+  long double threshold = .1;
+  long double thisStepSize = 0.01;
+  long double distClose = 0.;
+  
+  Vec<long double> dists;
+
+  unsigned nStepsUsed(0);
+  while(nStepsUsed<nSteps)
+    {
+      //long double energy = TMath::Sqrt(partMom.Mag2() + mParticle.mass*mParticle.mass);
+      
+      XYZ posIncr1 = partMom1.Unit() * thisStepSize;
+      XYZ posIncr2 = partMom2.Unit() * thisStepSize;
+      if( TMath::Sqrt(posIncr1.Mag2())-thisStepSize>1e-5 or
+	  TMath::Sqrt(posIncr2.Mag2())-thisStepSize>1e-5 )
+	std::cout << "ERROR: " <<  TMath::Sqrt(posIncr1.Mag2()) << ", " <<  thisStepSize << ", " << TMath::Sqrt(posIncr2.Mag2()) << ", " <<  thisStepSize << std::endl;
+	
+      partPos1 += posIncr1;
+      partPos2 += posIncr2;
+
+      long double dist = local_distance(partPos1, partPos2);
+      if(dist < threshold)
+	distClose += thisStepSize;
+      
+      if( dist > 2*1.1 )
+      	break;
+      else if( dist < threshold + step )
+	thisStepSize = step / 10000.;
+      else
+	thisStepSize = step;
+
+      if(nStepsUsed%100==0)
+	std::cout << dist << ", " << thisStepSize << " || ";
+      ++nStepsUsed;
+    }
+  std::cout << std::endl;
+  return distClose;
+}
+
+//assumes the velocity of oth particles is the same
+//assumes particle1 flies along the z direction (y=0 always)
+long double solve_order2_distance_intersection(long double z1, long double z2, long double y2,
+					  long double velocity, long double angle,
+					  long double threshold) {
+  
+  auto afunc = [velocity, angle]() {
+		 long double vel2 = velocity*velocity;
+		 return 2*(1+std::cos(angle))*vel2;
+	       };
+
+  auto bfunc = [z1, z2, y2, velocity, angle]() {
+		 long double zdiff = z1-z2;
+		 return 2*velocity*(zdiff*(1+std::cos(angle))-y2*std::sin(angle));
+	       };
+
+  auto cfunc = [z1, z2, y2, threshold]() {
+		 long double zdiff = z1-z2;
+		 return zdiff*zdiff + y2*y2 - threshold*threshold;
+	       };
+
+  long double aval = afunc();
+  long double bval = bfunc();
+  long double cval = cfunc();
+  long double sqrtval = std::sqrt(bval*bval - 4*aval*cval);
+
+  long double time1 = ( -bval + sqrtval ) / ( 2 * aval );
+  long double time2 = ( -bval - sqrtval ) / ( 2 * aval );
+
+  return std::abs(time1 - time2);
 }
 
 void run(const InputArgs& args)
@@ -53,30 +134,20 @@ void run(const InputArgs& args)
   //set global variables
   std::fstream file;
   XYZ origin(0., 0., 0.);
-  unsigned nsteps = 30000;
-  double stepsize = 0.001;
 
-  double dist = 5.;
-  double energy = args.energy;
-  double mass = args.mass;
+  long double dist = 1.1;
+  long double energy = args.energy;
+  long double mass = args.mass;
+  //unsigned nsteps = 500000;
+  long double stepsize = 0.001;
     
   //generate random positions around input positions
-  UniformDistribution<double> thetadist(0, M_PI/2);
-  UniformDistribution<double> phidist(-M_PI, M_PI);
+  long double nomAngle = 2 * TMath::ASin(0.1/5000);
+  UniformDistribution<long double> thetadist(nomAngle-nomAngle/10, nomAngle+nomAngle/10);
+  //UniformDistribution<long double> thetadist(M_PI/3000, M_PI/2999);
+  const long double mom_magnitude = TMath::Sqrt(energy*energy - mass*mass);
   
-  //Vec<Magnets::Magnet> magnetInfo{};
-  MagnetSystem magnets({});
-
-  //Vec<Calo> caloInfo{};
-  CaloSystem calos({});
-
-  if(args.draw) {
-    float beamcap = dist;
-    BuildGeom(Dimensions{0., 0., 0., 0., -beamcap, beamcap}, //beamline coordinates
-	      magnets, calos);
-  }
-  
-  constexpr float batchSize = 500.f;
+  constexpr long double batchSize = 1500.;
   const unsigned nbatches = ceil(args.nparticles/batchSize);
   
   std::cout << " --- Simulation Information --- " << std::endl;
@@ -88,7 +159,14 @@ void run(const InputArgs& args)
 
   std::string filename("data/collision_prob.csv");
   file.open(filename, std::ios_base::out);
-      
+
+  long double nomDistProxy = solve_order2_distance_intersection(-dist,
+							   dist*std::cos(nomAngle),
+							   dist*std::sin(nomAngle),
+							   mom_magnitude/mass,
+							   nomAngle,
+							   0.01);
+  
   for (unsigned ibatch : tq::trange(nbatches))
     {
       batchSize_ = ibatch==nbatches-1 ? size_last_batch(nbatches, args.nparticles, batchSize) : batchSize;
@@ -97,140 +175,72 @@ void run(const InputArgs& args)
       Vec<Particle> p_fixed(batchSize_);
       Vec<Particle> p_moving(batchSize_);
 
-      Vec<double> Thetas(batchSize_);
-      Vec<double> Phis(batchSize_);
-      
+      Vec<long double> Thetas(batchSize_);
+	
       for(unsigned i=0; i<batchSize_; ++i) {
 	//negative z side
 	p_fixed[i].pos = XYZ( 0., 0., -dist ); //cm
-	p_fixed[i].mom = XYZ(0.0, 0.0, TMath::Sqrt(energy*energy - mass*mass) ); // GeV/c
+	p_fixed[i].mom = XYZ(0.0, 0.0, mom_magnitude ); // GeV/c
 	p_fixed[i].mass = args.mass; // GeV/c^2
 	p_fixed[i].energy = energy;
 	p_fixed[i].charge = +1;
 
 	//positive z side
         Thetas[i] = thetadist.generate();
-	Phis[i]   = phidist.generate();
-	p_moving[i].pos = Polar(dist, Thetas[i], Phis[i]); //cm
-
-	double mom_magnitude = TMath::Sqrt(energy*energy - mass*mass);
+	p_moving[i].pos = XYZ(0., dist*std::sin(Thetas[i]), dist*std::cos(Thetas[i])); //cm
 	p_moving[i].mom = -1*p_moving[i].pos.Unit()*mom_magnitude; // GeV/c
 
 	p_moving[i].mass = args.mass; // GeV/c^2
 	p_moving[i].energy = energy;
 	p_moving[i].charge = +1;
-      }
 
-      Vec<TEveLine*> particleTrackViz1(batchSize_);
-      Vec<TEveLine*> particleTrackViz2(batchSize_);
-      if(args.draw) {
-	for(unsigned i=0; i<batchSize_; ++i) {
-	  particleTrackViz1[i] = new TEveLine();
-	  particleTrackViz2[i] = new TEveLine();
-	}
-      }
+	// long double distProxy = track_straight(p_fixed[i].pos, p_fixed[i].mom,
+	// 				  p_moving[i].pos, p_moving[i].mom,
+	// 				  stepsize, nsteps);
 
-      Vec<SimParticle> simp1;
-      Vec<SimParticle> simp2;
-      for(unsigned i=0; i<batchSize_; ++i) {
-	simp1.push_back( SimParticle(p_fixed[i], nsteps, stepsize) );
-	simp2.push_back( SimParticle(p_moving[i], nsteps, stepsize) );
-      }
+	long double distProxy = solve_order2_distance_intersection(p_fixed[i].pos.Z(),
+							      p_moving[i].pos.Z(),
+							      p_moving[i].pos.Y(),
+							      mom_magnitude/mass,
+							      Thetas[i],
+							      0.01); //threshold [cm]
 
-      Vec<Track> tracks1(batchSize_);
-      Vec<Track> tracks2(batchSize_);
-      for(unsigned i=0; i<batchSize_; ++i) {
-	tracks1[i] = simp1[i].track_straight();
-	tracks2[i] = simp2[i].track_straight();
-      }
 
-      Vec<double> intDist(batchSize_);
-            
-      for(unsigned i=0; i<batchSize_; ++i) {
-	//negative z side
-	Vec<double> en1 = tracks1[i].energies();
-	Vec<XYZ> pos1   = tracks1[i].positions();
-	Vec<XYZ> mom1   = tracks1[i].momenta();
-	unsigned nStepsUsed1  = tracks1[i].steps_used();
-
-	//positive z side
-	Vec<double> en2 = tracks2[i].energies();
-	Vec<XYZ> pos2   = tracks2[i].positions();
-	Vec<XYZ> mom2   = tracks2[i].momenta();
-	unsigned nStepsUsed2  = tracks2[i].steps_used();
-
-	unsigned minelem = std::min(nStepsUsed1, nStepsUsed2);
-
-	for(unsigned i_step = 0; i_step<minelem; i_step++)
-	  {
-	    
-	    if(args.draw) {
-	      particleTrackViz1[i]->SetNextPoint(pos1[i_step].X(),
-						 pos1[i_step].Y(),
-						 pos1[i_step].Z() );
-	      
-	      particleTrackViz2[i]->SetNextPoint(pos2[i_step].X(),
-						 pos2[i_step].Y(),
-						 pos2[i_step].Z() );
-	    }
-	  }
-
-	intDist[i] = calculate_intersection_distance(pos1, pos2, minelem, 0.01, stepsize);
-  	
+	distProxy = nomDistProxy-distProxy;
+	//distProxy *= 10000;
+	
+	//std::cout << distProxy << ", " << std::abs(nomDistProxy-distProxy) << std::endl;
+	
 	if(i==0 and ibatch==0)
-	  file << "iBatch,Idx,intDist,Theta,Phi" << std::endl;
-		
+	  file << "iBatch,Idx,distProxy,Theta" << std::endl;
+
+	char str1[40], str2[40];
+	sprintf(str1, "%.20Lf", distProxy);
+	sprintf(str2, "%.20Lf", Thetas[i]);
+	
 	file << std::to_string( ibatch ) << ","
 	     << std::to_string( i ) << ","
-	     << std::to_string( intDist[i] ) << ","
-	     << std::to_string( Thetas[i] ) << ","
-	     << std::to_string( Phis[i] )
+	  //	     << std::to_string( distProxy ) << ","
+	     << str1 << ","
+	     << str2
 	     << std::endl;	
       }
       
 
-      if(args.draw) {
-	for(unsigned ix=0; ix<batchSize_; ix++) {
-	  std::string histname1 = "track_fixed_ " + std::to_string(ix);
-	  particleTrackViz1[ix]->SetName( histname1.c_str() );
-	  particleTrackViz1[ix]->SetLineStyle(1);
-	  particleTrackViz1[ix]->SetLineWidth(2);
-	  particleTrackViz1[ix]->SetMainAlpha(0.7);
-	  particleTrackViz1[ix]->SetMainColor(kRed+3);
-
-	  std::string histname2 = "track_moving_ " + std::to_string(ix);
-	  particleTrackViz2[ix]->SetName( histname2.c_str() );
-	  particleTrackViz2[ix]->SetLineStyle(1);
-	  particleTrackViz2[ix]->SetLineWidth(2);
-	  particleTrackViz2[ix]->SetMainAlpha(0.7);
-	  particleTrackViz2[ix]->SetMainColor(kRed-7);
-	  gEve->AddElement(particleTrackViz1[ix]);
-	  gEve->AddElement(particleTrackViz2[ix]);
-	}
-      }
-
     } // for ibatch
 
   file.close();
-
-  if(args.draw)
-    gEve->Redraw3D(kTRUE);
 }
 
 // run example: ./collision_prob --energy 1380 --nparticles 1
 int main(int argc, char **argv) {
-  TApplication myapp("myapp", &argc, argv);
-  
-  bool flag_draw = false;
- 
   namespace po = boost::program_options;
   po::options_description desc("Options");
-  //https://www.boost.org/doc/libs/1_45_0/doc/html/boost/program_options/typed_value.html#id903171-bb
+  //https://www.boost.org/doc/libs/1_45_0/doc/html/boost/program_options/typed_value.html#idsthetadist903171-bb
   desc.add_options()
     ("help,h", "produce this help message")
-    ("draw", po::bool_switch(&flag_draw), "whether to draw the geometry with ROOT's Event Display")
     ("nparticles", po::value<unsigned>()->default_value(1), "number of particles to generate on each beam")
-    ("energy", po::value<float>()->required(), "beam energy position");
+    ("energy", po::value<long double>()->required(), "beam energy position");
       
   po::variables_map vm;
   po::store(po::parse_command_line(argc,argv,desc), vm);
@@ -245,7 +255,7 @@ int main(int argc, char **argv) {
   for (const auto& it : vm) {
     std::cout << it.first.c_str() << ": ";
     auto& value = it.second.value();
-    if (auto v = boost::any_cast<float>(&value))
+    if (auto v = boost::any_cast<long double>(&value))
       std::cout << *v << std::endl;
     else if (auto v = boost::any_cast<bool>(&value)) {
       std::string str_ = *v==1 ? "true" : "false";
@@ -261,15 +271,11 @@ int main(int argc, char **argv) {
 
   //run simulation   
   InputArgs info;
-  info.draw = flag_draw;
   info.nparticles = boost::any_cast<unsigned>(vm["nparticles"].value());
-  info.energy = boost::any_cast<float>(vm["energy"].value());
+  info.energy = boost::any_cast<long double>(vm["energy"].value());
   info.mass = 0.938; //GeV
   
   run(info);
-
-  if(flag_draw)
-    myapp.Run();
 
   std::cout << std::endl;
   return 0;

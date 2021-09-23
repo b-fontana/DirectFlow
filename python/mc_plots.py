@@ -1,4 +1,4 @@
-import sys, os
+import os
 import glob
 import pandas as pd
 import numpy as np
@@ -49,21 +49,21 @@ def run(FLAGS):
     phistr   = '\u03D5'
     thetastr = '\u03B8'
 
-    limit = 0.04
+    #limit = 0.04
     
     figkw = {'x.axis_label': thetastr + ' [rad]',
-             'y.axis_label': 'Distance being close',
-             'y_range': Range1d(0,limit)}
+             'y.axis_label': 'Distance being close'}
+             #'y_range': Range1d(0,limit)}
 
     ### FIGURE 0 ###
-    b.graph(idx=0, data=[g.index,g.intDist],
+    b.graph(idx=0, data=[g.index,g.distProxy],
             color='red', fig_kwargs=figkw)
 
     figkw.update({'x.axis_label': 'Distance being close',
                   'y.axis_label': thetastr + ' [rad]'})
-    figkw.pop('y_range')
+    #figkw.pop('y_range')
     b.histogram(idx=1,
-                data=np.histogram2d(df.intDist, df.Theta, bins=50),
+                data=np.histogram2d(df.distProxy, df.Theta, bins=50),
                 #style='quad%Viridis',
                 fig_kwargs=figkw)
 
