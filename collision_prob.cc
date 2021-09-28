@@ -103,7 +103,7 @@ long double solve_order2_distance_intersection(long double z1, long double z2, l
 		 long double vel2 = velocity*velocity;
 		 return 2*(1+std::cos(angle))*vel2;
 	       };
-
+s
   auto bfunc = [z1, z2, y2, velocity, angle]() {
 		 long double zdiff = z1-z2;
 		 return 2*velocity*(zdiff*(1+std::cos(angle))-y2*std::sin(angle));
@@ -129,8 +129,6 @@ void run(const InputArgs& args)
 {
   using XYZ = ROOT::Math::XYZVector;
 
-  gStyle->SetPalette(56); // 53 = black body radiation, 56 = inverted black body radiator, 103 = sunset, 87 == light temperature
-
   //set global variables
   std::fstream file;
   XYZ origin(0., 0., 0.);
@@ -143,15 +141,18 @@ void run(const InputArgs& args)
     
   //generate random positions around input positions
   long double nomAngle = 2 * TMath::ASin(0.1/5000);
-  UniformDistribution<long double> thetadist(nomAngle-nomAngle/10, nomAngle+nomAngle/10);
-  //UniformDistribution<long double> thetadist(M_PI/3000, M_PI/2999);
+  //UniformDistribution<long double> thetadist(nomAngle-nomAngle/10, nomAngle+nomAngle/10);
+  UniformDistribution<long double> thetadist(nomAngle, nomAngle);
+
   const long double mom_magnitude = TMath::Sqrt(energy*energy - mass*mass);
   
   constexpr long double batchSize = 1500.;
   const unsigned nbatches = ceil(args.nparticles/batchSize);
   
   std::cout << " --- Simulation Information --- " << std::endl;
-  std::cout << "Batch Size: " << batchSize << " (last batch: " << size_last_batch(nbatches, args.nparticles, batchSize) << ")" << std::endl;
+  std::cout << "Batch Size: " << batchSize << " (last batch: "
+	    << size_last_batch(nbatches, args.nparticles, batchSize)
+	    << ")" << std::endl;
   std::cout << "Number of batches: " << nbatches << std::endl;
   std::cout << "Step Size: " << stepsize << std::endl;
   std::cout << "--------------------------" << std::endl;
@@ -161,11 +162,11 @@ void run(const InputArgs& args)
   file.open(filename, std::ios_base::out);
 
   long double nomDistProxy = solve_order2_distance_intersection(-dist,
-							   dist*std::cos(nomAngle),
-							   dist*std::sin(nomAngle),
-							   mom_magnitude/mass,
-							   nomAngle,
-							   0.01);
+								dist*std::cos(nomAngle),
+								dist*std::sin(nomAngle),
+								mom_magnitude/mass,
+								nomAngle,
+								0.01);
   
   for (unsigned ibatch : tq::trange(nbatches))
     {
@@ -206,6 +207,7 @@ void run(const InputArgs& args)
 							      0.01); //threshold [cm]
 
 
+	printf("%.20Lf\n", distProxy);
 	distProxy = nomDistProxy-distProxy;
 	//distProxy *= 10000;
 	
