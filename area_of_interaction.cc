@@ -69,7 +69,7 @@ void print_startup_info(const InputArgs& args) {
 //'kbig' is reserved for the distance between v1 and x=0 along the x axis
 //'ksmall' is reserved for the distance between v2 and x=0 along the x axis
 //The function calculates and stores the theta-dependent area of the 4-vertex polygon.
-float calculate_area_with_output(float theta, float beamWidth2, const std::fstream& file) {
+float calculate_area_with_output(float theta, float beamWidth2) {
 
   const float slope = std::tan(theta);
   const float b2 = beamWidth2 / std::cos(theta);
@@ -94,29 +94,42 @@ void run(const InputArgs& args)
   std::fstream file;
   std::string filename("data/area_of_intersection.csv");
   file.open(filename, std::ios_base::out);
-  file << "Idx,Area,Theta" << std::endl;
+  file << "Idx,Area0,Area1,Area2,Area3,Area4,Theta" << std::endl;
   
   //set global variables
-  float beamWidth2 = 2 * 0.1; // [cm]
+  std::vector<float> beamWidth2{0.1, 0.2, 0.5, 1., 2.}; // [cm]
     
-  //float nomAngle = 2 * TMath::ASin(0.1/5000);
-  //UniformDistribution<float> thetadist(nomAngle-nomAngle/10, nomAngle+nomAngle/10);
-  UniformDistribution<float> thetadist(M_PI/100, M_PI/2);
+  float nomAngle = 2 * TMath::ASin(0.1/5000);
+  UniformDistribution<float> thetadist(0., nomAngle+nomAngle/10);
+  //UniformDistribution<float> thetadist(M_PI/100, M_PI/2);
 
   //Monte Carlo
   for (unsigned iter : tq::trange(args.niterations))
     {
       float theta = thetadist.generate();
-      float area = calculate_area_with_output(theta, beamWidth2, file);
-      //printf("%.20f\n", area);
       
-      char str1[40], str2[40];
-      sprintf(str1, "%.10f", area);
-      sprintf(str2, "%.10f", theta);
+      float area0 = calculate_area_with_output(theta, beamWidth2[0]);
+      float area1 = calculate_area_with_output(theta, beamWidth2[1]);
+      float area2 = calculate_area_with_output(theta, beamWidth2[2]);
+      float area3 = calculate_area_with_output(theta, beamWidth2[3]);
+      float area4 = calculate_area_with_output(theta, beamWidth2[4]);
+
+      char astr0[40], astr1[40], astr2[40], astr3[40], astr4[40];
+      char theta_str[40];
+      sprintf(astr0, "%.10f", area0);
+      sprintf(astr1, "%.10f", area1);
+      sprintf(astr2, "%.10f", area2);
+      sprintf(astr3, "%.10f", area3);
+      sprintf(astr4, "%.10f", area4);
+      sprintf(theta_str, "%.10f", theta);
       
       file << std::to_string( iter ) << ","
-	   << str1 << ","
-	   << str2
+	   << astr0 << ","
+	   << astr1 << ","
+	   << astr2 << ","
+	   << astr3 << ","
+	   << astr4 << ","
+	   << theta_str
 	   << std::endl;	
     }
 

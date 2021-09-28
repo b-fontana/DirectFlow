@@ -52,21 +52,31 @@ def run(FLAGS):
     #limit = 0.04
     
     figkw = {'x.axis_label': thetastr + ' [rad]',
-             'y.axis_label': 'Area [cm^2]'}
+             'y.axis_label': 'Area [cm^2]',
+             'l.click_policy': 'hide',
+             'y_axis_type': 'log'}
              #'y_range': Range1d(0,limit)}
 
     ### FIGURE 0 ###
-    b.graph(idx=0, data=[g.index,g.Area],
-            color='red', fig_kwargs=figkw)
+    nvals = 5
+    colors = ('red', 'orange', 'green', 'blue', 'brown')
+    legends = ('bW=0.1cm','bW=0.2cm','bW=0.5cm','bW=1cm','bW=2cm')
+    myvars = tuple('Area' + str(x) for x in range(nvals))
+    for idx,ivar in enumerate(myvars):
+
+        #total_area = np.trapz(g[ivar])
+        b.graph(idx=0, data=[g.index,g[ivar]],
+                color=colors[idx], fig_kwargs=figkw,
+                legend_label=legends[idx])
 
     ### FIGURE 1 ###
+    figkw.pop('l.click_policy')
     b.histogram(idx=1,
-                data=np.histogram2d(df.Theta, df.Area, bins=50),
+                data=np.histogram2d(df.Theta, df.Area0, bins=50),
                 style='quad%Viridis',
                 continuum_color="grey",
                 continuum_value=0.,
                 fig_kwargs=figkw)
-
 
     ##########################################################
     ######## Saving ##########################################
