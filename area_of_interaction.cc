@@ -69,21 +69,21 @@ void print_startup_info(const InputArgs& args) {
 //'kbig' is reserved for the distance between v1 and x=0 along the x axis
 //'ksmall' is reserved for the distance between v2 and x=0 along the x axis
 //The function calculates and stores the theta-dependent area of the 4-vertex polygon.
-float calculate_area_with_output(float theta, float beamWidth2) {
+double calculate_area_with_output(double theta, double beamWidth2) {
 
-  const float slope = std::tan(theta);
-  const float b2 = beamWidth2 / std::cos(theta);
-  const float kbig = -beamWidth2 / std::sin(theta);
-  const float ksmall = (beamWidth2-b2) / slope;
+  const double slope = std::tan(theta);
+  const double b2 = beamWidth2 / std::cos(theta);
+  const double kbig = -beamWidth2 / std::sin(theta);
+  const double ksmall = (beamWidth2-b2) / slope;
       
-  Point<float> v1(kbig, 0.);
-  Point<float> v2(ksmall, beamWidth2);
-  Point<float> v3(beamWidth2/slope, beamWidth2);
-  Point<float> v4(0, 0); //by definition
+  Point<double> v1(kbig, 0.);
+  Point<double> v2(ksmall, beamWidth2);
+  Point<double> v3(beamWidth2/slope, beamWidth2);
+  Point<double> v4(0, 0); //by definition
 
   //the area will be negative since the vertices are arranged in clockwise order
   //see https://mathworld.wolfram.com/PolygonArea.html
-  return std::abs( polygon_area<float>(v1, v2, v3, v4) );
+  return 0.01 * std::abs( polygon_area<double>(v1, v2, v3, v4) ); //convert from fm^2 to barn
  }
 
 void run(const InputArgs& args)
@@ -97,31 +97,31 @@ void run(const InputArgs& args)
   file << "Idx,Area0,Area1,Area2,Area3,Area4,Theta" << std::endl;
   
   //set global variables
-  std::vector<float> beamWidth2{0.1, 0.2, 0.5, 1., 2.}; // [cm]
-    
-  float nomAngle = 2 * TMath::ASin(0.1/5000);
-  UniformDistribution<float> thetadist(0., nomAngle+nomAngle/10);
-  //UniformDistribution<float> thetadist(M_PI/100, M_PI/2);
+  double leadR = 6.68; // [fm]
+  std::vector<double> beamWidth2{leadR, 2*leadR, 3*leadR, 4*leadR, 5*leadR}; // [fm]
+
+  UniformDistribution<double> thetadist(2.5e-4, 4e-4);
+  //UniformDistribution<double> thetadist(M_PI/100, M_PI/2);
 
   //Monte Carlo
   for (unsigned iter : tq::trange(args.niterations))
     {
-      float theta = thetadist.generate();
+      double theta = thetadist.generate();
       
-      float area0 = calculate_area_with_output(theta, beamWidth2[0]);
-      float area1 = calculate_area_with_output(theta, beamWidth2[1]);
-      float area2 = calculate_area_with_output(theta, beamWidth2[2]);
-      float area3 = calculate_area_with_output(theta, beamWidth2[3]);
-      float area4 = calculate_area_with_output(theta, beamWidth2[4]);
+      double area0 = calculate_area_with_output(theta, beamWidth2[0]);
+      double area1 = calculate_area_with_output(theta, beamWidth2[1]);
+      double area2 = calculate_area_with_output(theta, beamWidth2[2]);
+      double area3 = calculate_area_with_output(theta, beamWidth2[3]);
+      double area4 = calculate_area_with_output(theta, beamWidth2[4]);
 
       char astr0[40], astr1[40], astr2[40], astr3[40], astr4[40];
       char theta_str[40];
-      sprintf(astr0, "%.10f", area0);
-      sprintf(astr1, "%.10f", area1);
-      sprintf(astr2, "%.10f", area2);
-      sprintf(astr3, "%.10f", area3);
-      sprintf(astr4, "%.10f", area4);
-      sprintf(theta_str, "%.10f", theta);
+      sprintf(astr0, "%.20f", area0);
+      sprintf(astr1, "%.20f", area1);
+      sprintf(astr2, "%.20f", area2);
+      sprintf(astr3, "%.20f", area3);
+      sprintf(astr4, "%.20f", area4);
+      sprintf(theta_str, "%.20f", theta);
       
       file << std::to_string( iter ) << ","
 	   << astr0 << ","
@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
   for (const auto& it : vm) {
     std::cout << it.first.c_str() << ": ";
     auto& value = it.second.value();
-    if (auto v = boost::any_cast<float>(&value))
+    if (auto v = boost::any_cast<double>(&value))
       std::cout << *v << std::endl;
     else if (auto v = boost::any_cast<bool>(&value)) {
       std::string str_ = *v==1 ? "true" : "false";
