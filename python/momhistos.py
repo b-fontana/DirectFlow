@@ -53,10 +53,8 @@ def run(FLAGS):
     ######## Plotting ########################################
     ##########################################################
 
-    figwidths = [FIGDIMS1[0] for _ in range(NFIGS-1)]
-    figwidths.extend([FIGDIMS2[0]])
-    figheights = [FIGDIMS1[0] for _ in range(NFIGS-1)]
-    figheights.extend([FIGDIMS2[1]])
+    figwidths = [FIGDIMS1[0] for _ in range(NFRAMES)]
+    figheights = [FIGDIMS1[0] for _ in range(NFRAMES)]
     
     b = bkp.BokehPlot( [HTML_BASE_NAME + 'Cat' + str(x) + '.html' for x in range(NFRAMES)],
                        nframes=NFRAMES,
@@ -73,15 +71,15 @@ def run(FLAGS):
 
     figkw = {'y.axis_label': 'Counts'}
     figkw.update({'x.axis_label': 'X momentum sum [GeV]'})
-    b.histogram(idx=0, iframe=4,
+    b.histogram(idx=0, iframe=3,
                 data=np.histogram(df.sumMomXAbs, bins=100),
                 color='orange', fig_kwargs=figkw)
     figkw.update({'x.axis_label': 'Y momentum sum [GeV]'})
-    b.histogram(idx=1, iframe=4,
+    b.histogram(idx=1, iframe=3,
                 data=np.histogram(df.sumMomYAbs, bins=100),
                 color='orange', fig_kwargs=figkw)
     figkw.update({'x.axis_label': 'Z momentum sum [GeV]'})
-    b.histogram(idx=2, iframe=4,
+    b.histogram(idx=2, iframe=3,
                 data=np.histogram(df.sumMomZ, bins=100),
                 color='orange', fig_kwargs=figkw)
 
@@ -96,8 +94,8 @@ def run(FLAGS):
         background_fill_alpha=0,
         **dlatex
     )
-    for i in range(NFIGS-1):
-        b.get_figure(i).add_layout(latex1)
+    for i in range( b.get_nfigs(iframe=3) ):
+        b.get_figure(idx=i, iframe=3).add_layout(latex1)
 
     psistr = '\u03A8'
     phistr = '\u03D5'
@@ -145,10 +143,10 @@ def run(FLAGS):
     ##########################################################
     ######## Saving ##########################################
     ##########################################################
-    #b.save_frame(nrows=3, ncols=3, show=True)
     b.save_frame(iframe=0, layout=[[5,3,4],[0,1,2]], show=True)
     b.save_frame(iframe=1, layout=[[5,3,4],[0,1,2]], show=False)
     b.save_frame(iframe=2, layout=[[5,3,4],[0,1,2]], show=False)
+    b.save_frame(iframe=3, nrows=1, ncols=3, show=True)
     #b.save_figs(path='.', mode='png')
 
     script, div = components( b.get_figure(8) )
