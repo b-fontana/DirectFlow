@@ -49,6 +49,21 @@ private:
 };
 
 template <class T>
+class BernoulliDistribution final : public Generator<T> {
+public:
+
+  BernoulliDistribution(T prob) : Generator<T>() {
+    mDist = std::bernoulli_distribution(prob);
+  }
+  
+  T generate() { return mDist(Generator<T>::mRng); }
+
+
+private:
+  std::bernoulli_distribution mDist; 
+};
+
+template <class T>
 class NormalDistribution final : public Generator<T> {
 public:
 

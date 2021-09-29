@@ -4,6 +4,9 @@
 #include <boost/program_options.hpp>
 
 #include "TRandom.h"
+#include "TFile.h"
+#include "TGraph.h"
+#include "TCanvas.h"
 
 #include "include/tqdm.h"
 #include "include/generator.h"
@@ -42,17 +45,8 @@ T polygon_area(Point<T> v1, Point<T> v2, Point<T> v3, Point<T> v4) {
   return 0.5 * sum;
 }
 
-unsigned size_last_batch(unsigned nbatches, unsigned nelems, unsigned batchSize) {
-  return nelems-(nbatches-1)*batchSize;
-}
-
-
 void print_startup_info(const InputArgs& args) {  
   std::cout << " --- Simulation Information --- " << std::endl;
-  // std::cout << "Batch Size: " << batchSize << " (last batch: "
-  // 	    << size_last_batch(nbatches, args.nparticles, batchSize)
-  // 	    << ")" << std::endl;
-  // std::cout << "Number of batches: " << nbatches << std::endl;
   std::cout << "--------------------------" << std::endl;
 }
 
@@ -104,6 +98,7 @@ void run(const InputArgs& args)
   //UniformDistribution<double> thetadist(M_PI/100, M_PI/2);
 
   //Monte Carlo
+  std::vector<double> area_v(args.niterations), theta_v(args.niterations);
   for (unsigned iter : tq::trange(args.niterations))
     {
       double theta = thetadist.generate();
@@ -114,6 +109,9 @@ void run(const InputArgs& args)
       double area3 = calculate_area_with_output(theta, beamWidth2[3]);
       double area4 = calculate_area_with_output(theta, beamWidth2[4]);
 
+      area_v[iter] = area0;
+      theta_v[iter] = theta;
+      
       char astr0[40], astr1[40], astr2[40], astr3[40], astr4[40];
       char theta_str[40];
       sprintf(astr0, "%.20f", area0);
@@ -130,10 +128,30 @@ void run(const InputArgs& args)
 	   << astr3 << ","
 	   << astr4 << ","
 	   << theta_str
-	   << std::endl;	
-    }
+	   << std::endl;
 
+    }
   file.close();
+  
+  TCanvas *c = new TCanvas("c", "c");
+  TFile *f = new TFile("tgraph.root", "recreate");
+  TGraph *g = new TGraph(args.niterations, &(theta_v[0]), &(area_v[0]));
+  g->Sort();
+  float ymax = g->GetY()[0];
+  
+  for(int i = 0; i<g->GetN(); ++i) 
+    {
+      g->SetPointY(i,  g->GetY()[i] / ymax );
+    }
+  
+  g->SetName("prob_graph");
+  g->SetTitle("Probability vs theta");
+  g->GetXaxis()->SetTitle("Theta angle [rad]");
+  g->GetYaxis()->SetTitle("Probability");
+  g->Draw("AP same");
+  g->Write();
+  c->SaveAs("c.png");
+  delete f;
 }
 
 // run example: ./area_of_interaction.exe --niterations 10000

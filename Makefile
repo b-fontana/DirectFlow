@@ -1,5 +1,5 @@
 CC = g++
-EXEC = area_of_interaction.exe #basename must match the name of the *.cc file containing the main
+EXEC = v1_beam.exe #basename must match the name of the *.cc file containing the main
 RM = rm -r
 
 BASEDIR := $(shell pwd)

@@ -10,6 +10,8 @@
 #include <boost/program_options.hpp>
 
 #include <TApplication.h>
+#include "TFile.h"
+#include "TGraph.h"
 #include "Math/Vector3D.h" // XYZVector
 #include "TVector3.h"
 #include "TLorentzVector.h"
@@ -77,6 +79,35 @@ void run(tracking::TrackMode mode, const InputArgs& args)
   UniformDistribution<float> phidist(-M_PI, M_PI);
   UniformDistribution<float> thetadist(0, M_PI);
   UniformDistribution<float> etadist(-2.f, 2.f);
+
+  //read TGraph with interaction probabilities (taken from interaction area)
+  TFile* f = TFile::Open("tgraph.root");
+  if (!f) {
+    std::cout << "Error opening file" << std::endl;
+    std::exit(-1);
+  }
+  TGraph* graph = (TGraph*)f->Get("prob_graph");
+  if (!graph) {
+    std::cout << "Errora accessing graph" << std::endl;
+    std::exit(-1);
+  }
+  std::cout << graph->GetN() << std::endl;
+  std::cout << graph->Eval(0.00038) << std::endl;
+  // std::cout << graph->GetPointX(1) << std::endl;
+  // std::cout << graph->GetPointX( graph->GetN()-1 ) << std::endl;
+
+  //Process the TGraph
+  double xmin = 1e10, xmax = -1e10;
+  double* xvals;
+  xvals = (double*) malloc(graph->GetN() * sizeof(double));
+  xvals = graph->GetX();
+  for(int i = 0; i<graph->GetN(); ++i) {
+    if(xmin > xvals[i])
+      xmin = xvals[i];
+    if(xmax < xvals[i])
+      xmax = xvals[i];
+  }
+  //
   
   Vec<Magnet> magnetInfo{
      // {Magnet::DipoleY,    "D1_neg", kBlue,    std::make_pair(0.,-3.529),
@@ -190,6 +221,7 @@ void run(tracking::TrackMode mode, const InputArgs& args)
       //define the initial properties of the incident particle
       Vec<Particle> p1(batchSize_);
       Vec<Particle> p2(batchSize_);
+      Vec<double> angle12(batchSize_); //measure angle between the two particles
       for(unsigned i=0; i<batchSize_; ++i) {
 	//negative z side
 	p1[i].pos = XYZ( xdist.generate(), ydist.generate(), -args.zcutoff-50 ); // cm //-7000
@@ -203,6 +235,10 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	p2[i].mass = args.mass; // GeV/c^2
 	p2[i].energy = args.energy / static_cast<float>(args.npartons);
 	p2[i].charge = +1;
+
+	double angle_left  = TMath::ATan( p1[i].pos.Y() / args.zcutoff );
+	double angle_right = TMath::ATan( p2[i].pos.Y() / args.zcutoff );
+	angle12[i] = angle_left + angle_right;
       }
 
       Vec<TEveLine*> particleTrackViz1(batchSize_);
@@ -469,26 +505,38 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 	  totalPhi = 2*M_PI + totalPhi; //convert from [-Pi;Pi[ to [0;2Pi[
 		
 	corr[ix] = std::cos( distance_two_angles(totalPhi, psi_angles[ix]) );
-	
-	file2 << std::to_string( ibatch ) << ","
-	      << std::to_string( ix ) << ","
-	      << std::to_string( momSum.Px() ) << ","
-	      << std::to_string( momSum.Py() ) << ","
-	      << std::to_string( momSum.Pz() ) << ","
-	      << std::to_string( fermiPzBeforeBoost[ix] ) << ","
-	      << std::to_string( fermiPzAfterBoost[ix] ) << ","
-	      << std::to_string( xHitNoBoost[ix] ) << ","
-	      << std::to_string( yHitNoBoost[ix] ) << ","
-	      << std::to_string( xHit[ix] ) << ","
-	      << std::to_string( yHit[ix] ) << ","
-	      << std::to_string( psi1[ix] ) << ","
-	      << std::to_string( psi2[ix] ) << ","
-	      << std::to_string( cat[ix] ) << ","
-	      << std::to_string( psi_angles[ix] ) << ","
-	      << std::to_string( totalPhi ) << ","
-	      << std::to_string( totalEta ) << ","
-	      << std::to_string( corr[ix] ) 
-	      << std::endl;	
+
+	float decision_prob = -1.f;
+	if (angle12[ix] > xmax)
+	  decision_prob = graph->Eval(xmax);
+	else if(angle12[ix] < xmin)
+	  decision_prob = 1.f;
+	else //inside the TGraph's domain
+	  decision_prob = graph->Eval( angle12[ix] );
+	BernoulliDistribution<float> bernoulli_decision(decision_prob);
+
+	if( bernoulli_decision.generate() )
+	  {
+	    file2 << std::to_string( ibatch ) << ","
+		  << std::to_string( ix ) << ","
+		  << std::to_string( momSum.Px() ) << ","
+		  << std::to_string( momSum.Py() ) << ","
+		  << std::to_string( momSum.Pz() ) << ","
+		  << std::to_string( fermiPzBeforeBoost[ix] ) << ","
+		  << std::to_string( fermiPzAfterBoost[ix] ) << ","
+		  << std::to_string( xHitNoBoost[ix] ) << ","
+		  << std::to_string( yHitNoBoost[ix] ) << ","
+		  << std::to_string( xHit[ix] ) << ","
+		  << std::to_string( yHit[ix] ) << ","
+		  << std::to_string( psi1[ix] ) << ","
+		  << std::to_string( psi2[ix] ) << ","
+		  << std::to_string( cat[ix] ) << ","
+		  << std::to_string( psi_angles[ix] ) << ","
+		  << std::to_string( totalPhi ) << ","
+		  << std::to_string( totalEta ) << ","
+		  << std::to_string( corr[ix] ) 
+		  << std::endl;
+	  }
       }
       
       if(args.draw) {
@@ -517,6 +565,8 @@ void run(tracking::TrackMode mode, const InputArgs& args)
 
   if(args.draw)
     gEve->Redraw3D(kTRUE);
+
+  free(xvals);
 }
 
 // run example: ./v1_beam.exe --mode euler --x 0.08 --y 0.08 --energy 1380 --nparticles 1 --zcutoff 5000.

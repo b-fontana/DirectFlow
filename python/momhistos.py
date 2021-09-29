@@ -146,12 +146,12 @@ def run(FLAGS):
     b.save_frame(iframe=0, layout=[[5,3,4],[0,1,2]], show=True)
     b.save_frame(iframe=1, layout=[[5,3,4],[0,1,2]], show=False)
     b.save_frame(iframe=2, layout=[[5,3,4],[0,1,2]], show=False)
-    b.save_frame(iframe=3, nrows=1, ncols=3, show=True)
+    b.save_frame(iframe=3, nrows=1, ncols=3, show=False)
     #b.save_figs(path='.', mode='png')
 
-    script, div = components( b.get_figure(8) )
-    with open('histos.html', 'a') as f:
-        f.write(script)
+    # script, div = components( b.get_figure(8) )
+    # with open('histos.html', 'a') as f:
+    #     f.write(script)
         
 
 if __name__ == '__main__':
